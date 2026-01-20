@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Apply theme immediately to prevent flash of unstyled content (FOUC)
+    (function() {
+      const theme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script>
+    // Apply sidebar state immediately to prevent layout shift
+    (function() {
+      const savedState = localStorage.getItem('sidebar-state');
+      if (savedState === 'collapsed') {
+        document.documentElement.classList.add('sidebar-collapsed');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Solutions for common MarkStack problems including build errors, missing pages, styling issues, and deployment failures.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta property="og:title" content="Common Issues | MarkStack">
+  <meta property="og:description" content="Solutions for common MarkStack problems including build errors, missing pages, styling issues, and deployment failures.">
+  <meta property="og:url" content="https://kineticenforcer.github.io/markstackdemo/troubleshooting/common-issues">
+  <meta property="og:type" content="website">
+  <title>Common Issues | MarkStack</title>
+  <link rel="stylesheet" href="/markstackdemo/css/main.css">
+  <link rel="stylesheet" href="/markstackdemo/css/hljs-theme.css">
+  <link rel="icon" href="/markstackdemo/svg/logo.svg" type="image/svg+xml">
+</head>
+<body data-baseurl="/markstackdemo">
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/markstackdemo/" class="site-logo">
+        <img src="/markstackdemo/svg/logo.svg" alt="Logo" class="logo-icon" width="32" height="32">
+        <span class="logo-text">MarkStack</span>
+      </a>
+      
+      <div class="header-search">
+        <div class="search-container">
+          <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search documentation..." autocomplete="off">
+          <kbd class="search-shortcut">Ctrl+K</kbd>
+        </div>
+        <div id="search-results" class="search-results"></div>
+      </div>
+      
+      <div class="header-actions">
+        <a href="https://github.com/KineticEnforcer/MarkStack" target="_blank" rel="noopener noreferrer" class="github-link" aria-label="View on GitHub">
+          <svg class="github-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+        </a>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="breadcrumb-bar">
+    <div class="breadcrumb-container">
+      <a href="/markstackdemo/" class="breadcrumb-home" title="Home"><svg class="breadcrumb-home-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V9.5a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v4.5h2.25a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z"/></svg></a><span class="breadcrumb-separator">/</span><a href="/markstackdemo/troubleshooting/">Troubleshooting</a><span class="breadcrumb-separator">/</span><span class="breadcrumb-current">Common Issues</span>
+    </div>
+  </div>
+
+  <button class="sidebar-collapse-toggle" id="sidebar-toggle" title="Toggle sidebar">
+    <svg class="sidebar-toggle-icon collapse-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+      <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/>
+    </svg>
+    <svg class="sidebar-toggle-icon expand-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+      <path d="M8.22 3.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.53a.75.75 0 0 1 0-1.06Z"/>
+    </svg>
+  </button>
+
+  <div class="main-layout">
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <ul class="sidebar-list sidebar-level-0">
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/architecture/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Architecture</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/build-pipeline"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Build Pipeline</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/navigation-and-routing"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Navigation and Routing</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/search-indexing"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Search Indexing</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/authoring-content/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Authoring Content</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/content-model"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Content Model</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/examples"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Examples</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/frontmatter"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Frontmatter</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/markdown-features"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Markdown Features</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/media-and-links"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Media and Links</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/build-and-deploy/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Build and Deploy</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/cicd-integration"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>CI/CD Integration</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/commands-reference"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Commands Reference</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/deployment-guide"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Deployment Guide</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/configuration/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Configuration</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/configuration/homepage-content"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Homepage Content</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/configuration/site-config"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Site Config</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/customization/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Customization</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/customization/templates"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Templates</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/customization/themes-and-styling"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Themes and Styling</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/getting-started/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Getting Started</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/installation"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Installation</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/project-structure"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Project Structure</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/quickstart"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Quickstart</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder sidebar-expanded" data-state="expanded"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"/></svg></button><a href="/markstackdemo/troubleshooting/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Troubleshooting</a></div><div class="sidebar-children expanded"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file sidebar-current"><a href="/markstackdemo/troubleshooting/common-issues"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Common Issues</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/troubleshooting/frequently-asked-questions"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Frequently Asked Questions</a></li>
+</ul></div></li>
+</ul>
+      </nav>
+    </aside>
+    
+    <main class="content">
+      <article class="article">
+        <h1 id="common-issues" tabindex="-1"><a class="heading-anchor" href="#common-issues" aria-hidden="true">#</a> Common Issues</h1>
+<p>This page documents common problems and their solutions. Issues are organized by category for easy reference.</p>
+<h2 id="build-errors" tabindex="-1"><a class="heading-anchor" href="#build-errors" aria-hidden="true">#</a> Build Errors</h2>
+<h3 id="cannot-find-module-x-" tabindex="-1"><a class="heading-anchor" href="#cannot-find-module-x-" aria-hidden="true">#</a> Cannot find module ‘X’</h3>
+<p><strong>Symptoms:</strong></p>
+<pre class="hljs"><code>Error: Cannot find module 'markdown-it'
+Error: Cannot find module 'gray-matter'
+Error: Cannot find module 'chokidar'
+</code></pre>
+<p><strong>Cause:</strong> Dependencies are not installed.</p>
+<p><strong>Solution:</strong></p>
+<pre class="hljs" data-language="bash"><code>npm install
+</code></pre>
+<p>If that does not work, try a clean install:</p>
+<pre class="hljs" data-language="bash"><code><span class="hljs-built_in">rm</span> -rf node_modules package-lock.json
+npm install
+</code></pre>
+<h3 id="enoent-no-such-file-or-directory" tabindex="-1"><a class="heading-anchor" href="#enoent-no-such-file-or-directory" aria-hidden="true">#</a> ENOENT: no such file or directory</h3>
+<p><strong>Symptoms:</strong></p>
+<pre class="hljs"><code>Error: ENOENT: no such file or directory, open 'content/xyz.md'
+Error: ENOENT: no such file or directory, open 'templates/base.html'
+</code></pre>
+<p><strong>Cause:</strong> A file or directory that the build script expects is missing.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>
+<p>Verify you are in the correct directory:</p>
+<pre class="hljs" data-language="bash"><code><span class="hljs-built_in">pwd</span>  <span class="hljs-comment"># Should show your MarkStack project folder</span>
+<span class="hljs-built_in">ls</span>   <span class="hljs-comment"># Should show content/, templates/, build.js, etc.</span>
+</code></pre>
+</li>
+<li>
+<p>If <code>content/</code> is missing, create it:</p>
+<pre class="hljs" data-language="bash"><code><span class="hljs-built_in">mkdir</span> content
+</code></pre>
+</li>
+<li>
+<p>If <code>templates/base.html</code> is missing, you may need to restore it from version control or reinstall MarkStack.</p>
+</li>
+</ol>
+<h3 id="syntaxerror-in-siteconfig-json" tabindex="-1"><a class="heading-anchor" href="#syntaxerror-in-siteconfig-json" aria-hidden="true">#</a> SyntaxError in siteconfig.json</h3>
+<p><strong>Symptoms:</strong></p>
+<pre class="hljs"><code>SyntaxError: Unexpected token } in JSON at position 123
+Warning: Could not parse siteconfig.json, using defaults
+</code></pre>
+<p><strong>Cause:</strong> Invalid JSON syntax in the configuration file.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>
+<p>Open <code>siteconfig.json</code> and check for:</p>
+<ul>
+<li>Missing commas between properties</li>
+<li>Trailing commas after the last property</li>
+<li>Unquoted strings</li>
+<li>Single quotes instead of double quotes</li>
+</ul>
+</li>
+<li>
+<p>Validate your JSON:</p>
+<pre class="hljs" data-language="bash"><code>node -e <span class="hljs-string">&quot;console.log(JSON.parse(require(&#x27;fs&#x27;).readFileSync(&#x27;siteconfig.json&#x27;)))&quot;</span>
+</code></pre>
+</li>
+<li>
+<p>Use a JSON validator online or in your editor.</p>
+</li>
+</ol>
+<p>Correct format:</p>
+<pre class="hljs" data-language="json"><code><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;siteTitle&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;My Site&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;siteUrl&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://example.com&quot;</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>Common mistakes:</p>
+<pre class="hljs" data-language="json"><code><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;siteTitle&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;My Site&quot;</span><span class="hljs-punctuation">,</span>   <span class="hljs-comment">// Trailing comma - WRONG</span>
+<span class="hljs-punctuation">}</span>
+
+<span class="hljs-punctuation">{</span>
+  siteTitle<span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;My Site&quot;</span>      <span class="hljs-comment">// Unquoted key - WRONG</span>
+<span class="hljs-punctuation">}</span>
+
+<span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;siteTitle&quot;</span><span class="hljs-punctuation">:</span> &#x27;My Site&#x27;    <span class="hljs-comment">// Single quotes - WRONG</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h3 id="invalid-yaml-frontmatter" tabindex="-1"><a class="heading-anchor" href="#invalid-yaml-frontmatter" aria-hidden="true">#</a> Invalid YAML frontmatter</h3>
+<p><strong>Symptoms:</strong></p>
+<pre class="hljs"><code>YAMLException: bad indentation of a mapping entry
+YAMLException: can not read a block mapping entry
+</code></pre>
+<p><strong>Cause:</strong> Syntax error in the YAML frontmatter of a markdown file.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>
+<p>Check the frontmatter uses correct YAML syntax:</p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-meta">---</span>
+<span class="hljs-attr">title:</span> <span class="hljs-string">My</span> <span class="hljs-string">Page</span> <span class="hljs-string">Title</span>
+<span class="hljs-attr">description:</span> <span class="hljs-string">A</span> <span class="hljs-string">description</span> <span class="hljs-string">of</span> <span class="hljs-string">this</span> <span class="hljs-string">page</span>
+<span class="hljs-meta">---
+</span></code></pre>
+</li>
+<li>
+<p>Common mistakes:</p>
+<ul>
+<li>Incorrect indentation (use spaces, not tabs)</li>
+<li>Missing space after the colon</li>
+<li>Unquoted special characters</li>
+</ul>
+</li>
+<li>
+<p>Quote values with special characters:</p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-meta">---</span>
+<span class="hljs-attr">title:</span> <span class="hljs-string">&quot;Getting Started: A Guide&quot;</span>
+<span class="hljs-attr">description:</span> <span class="hljs-string">&quot;Learn about the &#x27;features&#x27; here&quot;</span>
+<span class="hljs-meta">---
+</span></code></pre>
+</li>
+</ol>
+<h3 id="build-hangs-or-never-completes" tabindex="-1"><a class="heading-anchor" href="#build-hangs-or-never-completes" aria-hidden="true">#</a> Build hangs or never completes</h3>
+<p><strong>Symptoms:</strong> The build starts but never finishes, or takes an extremely long time.</p>
+<p><strong>Cause:</strong> Usually caused by very large files, circular references, or filesystem issues.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Check for very large markdown files (over 1MB)</li>
+<li>Look for files that should not be in <code>content/</code>:<pre class="hljs" data-language="bash"><code>find content -size +1M
+</code></pre>
+</li>
+<li>Ensure no symbolic links create circular references</li>
+<li>Try building with fewer files to isolate the problem</li>
+</ol>
+<h2 id="missing-or-incorrect-pages" tabindex="-1"><a class="heading-anchor" href="#missing-or-incorrect-pages" aria-hidden="true">#</a> Missing or Incorrect Pages</h2>
+<h3 id="page-does-not-appear-in-navigation" tabindex="-1"><a class="heading-anchor" href="#page-does-not-appear-in-navigation" aria-hidden="true">#</a> Page does not appear in navigation</h3>
+<p><strong>Symptoms:</strong> A markdown file exists but does not show in the sidebar.</p>
+<p><strong>Causes and Solutions:</strong></p>
+<ol>
+<li>
+<p><strong>File not in content/ directory</strong></p>
+<ul>
+<li>Verify the file is inside <code>content/</code>, not at the project root</li>
+</ul>
+</li>
+<li>
+<p><strong>Hidden file</strong></p>
+<ul>
+<li>Files starting with <code>.</code> are ignored</li>
+<li>Rename <code>.hidden.md</code> to <code>hidden.md</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Not a .md file</strong></p>
+<ul>
+<li>Only <code>.md</code> files are processed</li>
+<li>Rename <code>.markdown</code> or <code>.txt</code> to <code>.md</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Build cache issue</strong></p>
+<ul>
+<li>Run <code>npm run clean &amp;&amp; npm run build</code></li>
+</ul>
+</li>
+</ol>
+<h3 id="page-shows-wrong-title" tabindex="-1"><a class="heading-anchor" href="#page-shows-wrong-title" aria-hidden="true">#</a> Page shows wrong title</h3>
+<p><strong>Symptoms:</strong> The navigation shows a different title than expected.</p>
+<p><strong>Cause:</strong> MarkStack uses the frontmatter title, falling back to the filename.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>
+<p>Check your frontmatter:</p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-meta">---</span>
+<span class="hljs-attr">title:</span> <span class="hljs-string">Expected</span> <span class="hljs-string">Title</span> <span class="hljs-string">Here</span>
+<span class="hljs-meta">---
+</span></code></pre>
+</li>
+<li>
+<p>If no frontmatter, the title is derived from the filename:</p>
+<ul>
+<li><code>my-page.md</code> becomes “My Page”</li>
+<li><code>MyPage.md</code> becomes “MyPage” (no transformation)</li>
+</ul>
+</li>
+</ol>
+<h3 id="page-url-is-wrong" tabindex="-1"><a class="heading-anchor" href="#page-url-is-wrong" aria-hidden="true">#</a> Page URL is wrong</h3>
+<p><strong>Symptoms:</strong> The page is at <code>/my-page/</code> but you expected <code>/different-url/</code>.</p>
+<p><strong>Cause:</strong> URLs are generated from titles, not filenames.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>The URL comes from the <code>title</code> in frontmatter (slugified)</li>
+<li>To change the URL, change the title:<pre class="hljs" data-language="yaml"><code><span class="hljs-meta">---</span>
+<span class="hljs-attr">title:</span> <span class="hljs-string">Different</span> <span class="hljs-string">URL</span>
+<span class="hljs-meta">---
+</span></code></pre>
+This creates <code>/different-url/</code></li>
+</ol>
+<h3 id="404-for-a-page-that-exists" tabindex="-1"><a class="heading-anchor" href="#404-for-a-page-that-exists" aria-hidden="true">#</a> 404 for a page that exists</h3>
+<p><strong>Symptoms:</strong> Clicking a navigation link shows 404.</p>
+<p><strong>Causes and Solutions:</strong></p>
+<ol>
+<li>
+<p><strong>URL mismatch</strong></p>
+<ul>
+<li>The link URL does not match the generated URL</li>
+<li>Check that the page title has not changed</li>
+</ul>
+</li>
+<li>
+<p><strong>Server configuration</strong></p>
+<ul>
+<li>Your server may not handle clean URLs correctly</li>
+<li>For nginx, add: <code>try_files $uri $uri/ $uri/index.html =404;</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Case sensitivity</strong></p>
+<ul>
+<li>Linux servers are case-sensitive</li>
+<li><code>/Getting-Started/</code> is different from <code>/getting-started/</code></li>
+</ul>
+</li>
+</ol>
+<h2 id="styling-issues" tabindex="-1"><a class="heading-anchor" href="#styling-issues" aria-hidden="true">#</a> Styling Issues</h2>
+<h3 id="styles-not-loading" tabindex="-1"><a class="heading-anchor" href="#styles-not-loading" aria-hidden="true">#</a> Styles not loading</h3>
+<p><strong>Symptoms:</strong> Page appears unstyled, plain HTML.</p>
+<p><strong>Cause:</strong> CSS files are not being served or paths are wrong.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>
+<p>Verify CSS files exist in <code>dist/css/</code>:</p>
+<pre class="hljs" data-language="bash"><code><span class="hljs-built_in">ls</span> dist/css/
+<span class="hljs-comment"># Should show main.css, hljs-theme.css</span>
+</code></pre>
+</li>
+<li>
+<p>Check browser network tab for 404 errors on CSS</p>
+</li>
+<li>
+<p>If self-hosting, ensure your server serves static files from <code>dist/</code></p>
+</li>
+<li>
+<p>Verify the base path is correct (for subdirectory hosting)</p>
+</li>
+</ol>
+<h3 id="theme-toggle-does-not-work" tabindex="-1"><a class="heading-anchor" href="#theme-toggle-does-not-work" aria-hidden="true">#</a> Theme toggle does not work</h3>
+<p><strong>Symptoms:</strong> Clicking the theme button does nothing.</p>
+<p><strong>Cause:</strong> JavaScript error or missing script.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>
+<p>Check browser console for errors (press F12)</p>
+</li>
+<li>
+<p>Verify <code>app.js</code> exists:</p>
+<pre class="hljs" data-language="bash"><code><span class="hljs-built_in">ls</span> dist/js/app.js
+</code></pre>
+</li>
+<li>
+<p>Check for JavaScript errors in the console</p>
+</li>
+<li>
+<p>Ensure no Content Security Policy blocks inline scripts</p>
+</li>
+</ol>
+<h3 id="code-blocks-not-highlighted" tabindex="-1"><a class="heading-anchor" href="#code-blocks-not-highlighted" aria-hidden="true">#</a> Code blocks not highlighted</h3>
+<p><strong>Symptoms:</strong> Code appears but without syntax colors.</p>
+<p><strong>Cause:</strong> Missing language identifier or highlight.js issue.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>
+<p>Specify the language in code blocks:</p>
+<pre class="hljs" data-language="markdown"><code><span class="hljs-code">```javascript
+const x = 1;
+```</span>
+</code></pre>
+</li>
+<li>
+<p>Check that <code>hljs-theme.css</code> loads:</p>
+<pre class="hljs" data-language="bash"><code><span class="hljs-built_in">ls</span> dist/css/hljs-theme.css
+</code></pre>
+</li>
+<li>
+<p>Verify the language is supported by highlight.js</p>
+</li>
+</ol>
+<h3 id="layout-broken-on-mobile" tabindex="-1"><a class="heading-anchor" href="#layout-broken-on-mobile" aria-hidden="true">#</a> Layout broken on mobile</h3>
+<p><strong>Symptoms:</strong> Sidebar overlaps content, text too small.</p>
+<p><strong>Cause:</strong> CSS responsive rules not applied or viewport meta missing.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>
+<p>Check that <code>templates/base.html</code> includes the viewport meta:</p>
+<pre class="hljs" data-language="html"><code><span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;viewport&quot;</span> <span class="hljs-attr">content</span>=<span class="hljs-string">&quot;width=device-width, initial-scale=1.0&quot;</span>&gt;</span>
+</code></pre>
+</li>
+<li>
+<p>Clear browser cache and reload</p>
+</li>
+<li>
+<p>Check for custom CSS that might override responsive rules</p>
+</li>
+</ol>
+<h2 id="search-issues" tabindex="-1"><a class="heading-anchor" href="#search-issues" aria-hidden="true">#</a> Search Issues</h2>
+<h3 id="search-returns-no-results" tabindex="-1"><a class="heading-anchor" href="#search-returns-no-results" aria-hidden="true">#</a> Search returns no results</h3>
+<p><strong>Symptoms:</strong> Searching shows “No results found” for terms that should match.</p>
+<p><strong>Causes and Solutions:</strong></p>
+<ol>
+<li>
+<p><strong>Search index not generated</strong></p>
+<pre class="hljs" data-language="bash"><code><span class="hljs-built_in">ls</span> dist/search-index.json
+<span class="hljs-comment"># File should exist and not be empty</span>
+</code></pre>
+</li>
+<li>
+<p><strong>Index not loading</strong></p>
+<ul>
+<li>Check browser network tab for errors loading <code>search-index.json</code></li>
+<li>Check browser console for JavaScript errors</li>
+</ul>
+</li>
+<li>
+<p><strong>Query too short</strong></p>
+<ul>
+<li>Search requires at least 2 characters</li>
+<li>Try longer search terms</li>
+</ul>
+</li>
+<li>
+<p><strong>Content not indexed</strong></p>
+<ul>
+<li>Rebuild: <code>npm run build</code></li>
+<li>Check that pages have content (not empty)</li>
+</ul>
+</li>
+</ol>
+<h3 id="search-is-slow" tabindex="-1"><a class="heading-anchor" href="#search-is-slow" aria-hidden="true">#</a> Search is slow</h3>
+<p><strong>Symptoms:</strong> Noticeable delay when typing in search.</p>
+<p><strong>Cause:</strong> Large search index or slow device.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Enable gzip compression on your server</li>
+<li>Consider limiting indexed content length in <code>build.js</code></li>
+<li>The search debounces by 150ms; this is normal</li>
+</ol>
+<h3 id="ctrl-k-shortcut-does-not-work" tabindex="-1"><a class="heading-anchor" href="#ctrl-k-shortcut-does-not-work" aria-hidden="true">#</a> Ctrl+K shortcut does not work</h3>
+<p><strong>Symptoms:</strong> Pressing Ctrl+K does not focus the search box.</p>
+<p><strong>Cause:</strong> Browser or extension intercepting the shortcut.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Some browsers use Ctrl+K for address bar search</li>
+<li>Some extensions may capture this shortcut</li>
+<li>Click the search box instead, or press Tab to navigate to it</li>
+</ol>
+<h2 id="deployment-issues" tabindex="-1"><a class="heading-anchor" href="#deployment-issues" aria-hidden="true">#</a> Deployment Issues</h2>
+<h3 id="site-works-locally-but-not-deployed" tabindex="-1"><a class="heading-anchor" href="#site-works-locally-but-not-deployed" aria-hidden="true">#</a> Site works locally but not deployed</h3>
+<p><strong>Symptoms:</strong> Everything works with <code>npx serve dist</code> but fails on the hosting platform.</p>
+<p><strong>Causes and Solutions:</strong></p>
+<ol>
+<li>
+<p><strong>Build not running on host</strong></p>
+<ul>
+<li>Verify build command is configured: <code>npm run build</code></li>
+<li>Check platform build logs for errors</li>
+</ul>
+</li>
+<li>
+<p><strong>Wrong output directory</strong></p>
+<ul>
+<li>Ensure publish directory is set to <code>dist</code></li>
+<li>Not <code>build</code>, <code>public</code>, or <code>out</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Missing dependencies</strong></p>
+<ul>
+<li>Ensure <code>package-lock.json</code> is committed</li>
+<li>Use <code>npm ci</code> instead of <code>npm install</code> in CI</li>
+</ul>
+</li>
+<li>
+<p><strong>Node version mismatch</strong></p>
+<ul>
+<li>Specify Node version in platform settings</li>
+<li>Use Node 18 or higher</li>
+</ul>
+</li>
+</ol>
+<h3 id="clean-urls-not-working" tabindex="-1"><a class="heading-anchor" href="#clean-urls-not-working" aria-hidden="true">#</a> Clean URLs not working</h3>
+<p><strong>Symptoms:</strong> <code>/about/</code> returns 404, but <code>/about/index.html</code> works.</p>
+<p><strong>Cause:</strong> Server not configured for clean URLs.</p>
+<p><strong>Solution:</strong></p>
+<p>For Netlify, add <code>netlify.toml</code>:</p>
+<pre class="hljs" data-language="toml"><code><span class="hljs-section">[[redirects]]</span>
+  <span class="hljs-attr">from</span> = <span class="hljs-string">&quot;/*&quot;</span>
+  <span class="hljs-attr">to</span> = <span class="hljs-string">&quot;/404.html&quot;</span>
+  <span class="hljs-attr">status</span> = <span class="hljs-number">404</span>
+</code></pre>
+<p>For nginx:</p>
+<pre class="hljs" data-language="nginx"><code><span class="hljs-section">location</span> / {
+  <span class="hljs-attribute">try_files</span> <span class="hljs-variable">$uri</span> <span class="hljs-variable">$uri</span>/ <span class="hljs-variable">$uri</span>/index.html =<span class="hljs-number">404</span>;
+}
+</code></pre>
+<p>For Apache <code>.htaccess</code>:</p>
+<pre class="hljs" data-language="apache"><code><span class="hljs-attribute">RewriteEngine</span> <span class="hljs-literal">On</span>
+<span class="hljs-attribute">RewriteCond</span> <span class="hljs-variable">%{REQUEST_FILENAME}</span> !-f
+<span class="hljs-attribute">RewriteCond</span> <span class="hljs-variable">%{REQUEST_FILENAME}</span>/index.html -f
+<span class="hljs-attribute">RewriteRule</span> ^(.*)$ $<span class="hljs-number">1</span>/index.html<span class="hljs-meta"> [L]</span>
+</code></pre>
+<h3 id="mixed-content-warnings" tabindex="-1"><a class="heading-anchor" href="#mixed-content-warnings" aria-hidden="true">#</a> Mixed content warnings</h3>
+<p><strong>Symptoms:</strong> Browser shows security warnings, some resources do not load.</p>
+<p><strong>Cause:</strong> Loading HTTP resources on an HTTPS site.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Ensure all resource URLs in templates use <code>https://</code> or protocol-relative <code>//</code></li>
+<li>Check <code>siteconfig.json</code> uses <code>https://</code> for <code>siteUrl</code></li>
+<li>Search generated HTML for <code>http://</code> and update sources</li>
+</ol>
+<h3 id="assets-not-found-after-deploy" tabindex="-1"><a class="heading-anchor" href="#assets-not-found-after-deploy" aria-hidden="true">#</a> Assets not found after deploy</h3>
+<p><strong>Symptoms:</strong> CSS, JS, or images return 404 on production.</p>
+<p><strong>Cause:</strong> Path issues or incomplete deploy.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Verify all files in <code>dist/</code> were uploaded</li>
+<li>Check that paths use leading slash: <code>/css/main.css</code></li>
+<li>If deployed to subdirectory, update base paths</li>
+</ol>
+<h2 id="watch-mode-issues" tabindex="-1"><a class="heading-anchor" href="#watch-mode-issues" aria-hidden="true">#</a> Watch Mode Issues</h2>
+<h3 id="watch-does-not-detect-changes" tabindex="-1"><a class="heading-anchor" href="#watch-does-not-detect-changes" aria-hidden="true">#</a> Watch does not detect changes</h3>
+<p><strong>Symptoms:</strong> Saving files does not trigger rebuild.</p>
+<p><strong>Causes and Solutions:</strong></p>
+<ol>
+<li>
+<p><strong>Saving to wrong location</strong></p>
+<ul>
+<li>Verify you are editing files in <code>content/</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Editor not saving</strong></p>
+<ul>
+<li>Check auto-save settings</li>
+<li>Manually save with Ctrl+S</li>
+</ul>
+</li>
+<li>
+<p><strong>Filesystem events not propagating</strong></p>
+<ul>
+<li>Some network drives or Docker volumes have issues</li>
+<li>Try manual build: <code>npm run build</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Too many files</strong></p>
+<ul>
+<li>Operating systems limit watched files</li>
+<li>On Linux, increase limit: <code>echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf</code></li>
+</ul>
+</li>
+</ol>
+<h3 id="watch-uses-high-cpu" tabindex="-1"><a class="heading-anchor" href="#watch-uses-high-cpu" aria-hidden="true">#</a> Watch uses high CPU</h3>
+<p><strong>Symptoms:</strong> <code>npm run watch</code> consumes significant CPU.</p>
+<p><strong>Cause:</strong> Watching too many files or filesystem polling.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Ensure <code>node_modules</code> is not being watched</li>
+<li>Close other applications that might compete for filesystem events</li>
+<li>Use <code>npm run build</code> for one-off builds</li>
+</ol>
+<blockquote class="alert alert-tip">
+<p><span class="alert-title"><span class="alert-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"/></svg></span>TIP</span>
+Most issues can be resolved by reinstalling dependencies (<code>npm install</code>) and doing a clean build (<code>npm run clean &amp;&amp; npm run build</code>). Try this first before investigating further.</p>
+</blockquote>
+
+      </article>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <p>Built with <a href="https://github.com/KineticEnforcer/MarkStack" target="_blank" rel="noopener noreferrer">MarkStack</a></p>
+      <p class="copyright">© 2026 KineticEnforcer. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="/markstackdemo/js/app.js"></script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+    });
+  </script>
+</body>
+</html>

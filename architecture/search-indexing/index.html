@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Apply theme immediately to prevent flash of unstyled content (FOUC)
+    (function() {
+      const theme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script>
+    // Apply sidebar state immediately to prevent layout shift
+    (function() {
+      const savedState = localStorage.getItem('sidebar-state');
+      if (savedState === 'collapsed') {
+        document.documentElement.classList.add('sidebar-collapsed');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Understand how MarkStack generates the search index and how the client-side search algorithm finds and ranks results.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta property="og:title" content="Search Indexing | MarkStack">
+  <meta property="og:description" content="Understand how MarkStack generates the search index and how the client-side search algorithm finds and ranks results.">
+  <meta property="og:url" content="https://kineticenforcer.github.io/markstackdemo/architecture/search-indexing">
+  <meta property="og:type" content="website">
+  <title>Search Indexing | MarkStack</title>
+  <link rel="stylesheet" href="/markstackdemo/css/main.css">
+  <link rel="stylesheet" href="/markstackdemo/css/hljs-theme.css">
+  <link rel="icon" href="/markstackdemo/svg/logo.svg" type="image/svg+xml">
+</head>
+<body data-baseurl="/markstackdemo">
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/markstackdemo/" class="site-logo">
+        <img src="/markstackdemo/svg/logo.svg" alt="Logo" class="logo-icon" width="32" height="32">
+        <span class="logo-text">MarkStack</span>
+      </a>
+      
+      <div class="header-search">
+        <div class="search-container">
+          <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search documentation..." autocomplete="off">
+          <kbd class="search-shortcut">Ctrl+K</kbd>
+        </div>
+        <div id="search-results" class="search-results"></div>
+      </div>
+      
+      <div class="header-actions">
+        <a href="https://github.com/KineticEnforcer/MarkStack" target="_blank" rel="noopener noreferrer" class="github-link" aria-label="View on GitHub">
+          <svg class="github-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+        </a>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="breadcrumb-bar">
+    <div class="breadcrumb-container">
+      <a href="/markstackdemo/" class="breadcrumb-home" title="Home"><svg class="breadcrumb-home-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V9.5a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v4.5h2.25a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z"/></svg></a><span class="breadcrumb-separator">/</span><a href="/markstackdemo/architecture/">Architecture</a><span class="breadcrumb-separator">/</span><span class="breadcrumb-current">Search Indexing</span>
+    </div>
+  </div>
+
+  <button class="sidebar-collapse-toggle" id="sidebar-toggle" title="Toggle sidebar">
+    <svg class="sidebar-toggle-icon collapse-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+      <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/>
+    </svg>
+    <svg class="sidebar-toggle-icon expand-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+      <path d="M8.22 3.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.53a.75.75 0 0 1 0-1.06Z"/>
+    </svg>
+  </button>
+
+  <div class="main-layout">
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <ul class="sidebar-list sidebar-level-0">
+<li class="sidebar-item sidebar-folder sidebar-expanded" data-state="expanded"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"/></svg></button><a href="/markstackdemo/architecture/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Architecture</a></div><div class="sidebar-children expanded"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/build-pipeline"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Build Pipeline</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/navigation-and-routing"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Navigation and Routing</a></li>
+<li class="sidebar-item sidebar-file sidebar-current"><a href="/markstackdemo/architecture/search-indexing"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Search Indexing</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/authoring-content/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Authoring Content</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/content-model"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Content Model</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/examples"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Examples</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/frontmatter"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Frontmatter</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/markdown-features"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Markdown Features</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/media-and-links"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Media and Links</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/build-and-deploy/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Build and Deploy</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/cicd-integration"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>CI/CD Integration</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/commands-reference"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Commands Reference</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/deployment-guide"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Deployment Guide</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/configuration/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Configuration</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/configuration/homepage-content"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Homepage Content</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/configuration/site-config"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Site Config</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/customization/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Customization</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/customization/templates"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Templates</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/customization/themes-and-styling"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Themes and Styling</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/getting-started/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Getting Started</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/installation"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Installation</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/project-structure"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Project Structure</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/quickstart"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Quickstart</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/troubleshooting/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Troubleshooting</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/troubleshooting/common-issues"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Common Issues</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/troubleshooting/frequently-asked-questions"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Frequently Asked Questions</a></li>
+</ul></div></li>
+</ul>
+      </nav>
+    </aside>
+    
+    <main class="content">
+      <article class="article">
+        <h1 id="search-indexing" tabindex="-1"><a class="heading-anchor" href="#search-indexing" aria-hidden="true">#</a> Search Indexing</h1>
+<p>MarkStack includes full-text search without requiring a server-side search engine. This page explains how the search index is generated and how search works in the browser.</p>
+<h2 id="search-architecture" tabindex="-1"><a class="heading-anchor" href="#search-architecture" aria-hidden="true">#</a> Search Architecture</h2>
+<p>MarkStack search works entirely in the browser:</p>
+<ol>
+<li><strong>Build time</strong>: Generate a JSON index with all page content</li>
+<li><strong>Page load</strong>: Browser fetches the search index (on first search)</li>
+<li><strong>Search time</strong>: JavaScript searches the index and displays results</li>
+</ol>
+<p>No server-side processing, no external search services, no API calls.</p>
+<h2 id="index-generation" tabindex="-1"><a class="heading-anchor" href="#index-generation" aria-hidden="true">#</a> Index Generation</h2>
+<h3 id="when-the-index-is-built" tabindex="-1"><a class="heading-anchor" href="#when-the-index-is-built" aria-hidden="true">#</a> When the Index is Built</h3>
+<p>The search index is generated as part of the build process. As each page is processed, its content is added to a global array:</p>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-keyword">const</span> searchIndex = [];
+
+<span class="hljs-comment">// During content processing:</span>
+searchIndex.<span class="hljs-title function_">push</span>({
+  <span class="hljs-attr">title</span>: processed.<span class="hljs-property">title</span>,
+  <span class="hljs-attr">url</span>: processed.<span class="hljs-property">urlPath</span>,
+  <span class="hljs-attr">description</span>: processed.<span class="hljs-property">description</span>,
+  <span class="hljs-attr">content</span>: plainTextContent
+});
+</code></pre>
+<p>After all pages are processed, the index is written:</p>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-keyword">function</span> <span class="hljs-title function_">generateSearchIndex</span>(<span class="hljs-params"></span>) {
+  <span class="hljs-keyword">const</span> outputPath = path.<span class="hljs-title function_">join</span>(<span class="hljs-variable constant_">CONFIG</span>.<span class="hljs-property">distDir</span>, <span class="hljs-string">&#x27;search-index.json&#x27;</span>);
+  fs.<span class="hljs-title function_">writeFileSync</span>(outputPath, <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>(searchIndex, <span class="hljs-literal">null</span>, <span class="hljs-number">2</span>));
+  <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">&#x27;✓ Generated: /search-index.json (&#x27;</span> + searchIndex.<span class="hljs-property">length</span> + <span class="hljs-string">&#x27; pages)&#x27;</span>);
+}
+</code></pre>
+<h3 id="index-entry-structure" tabindex="-1"><a class="heading-anchor" href="#index-entry-structure" aria-hidden="true">#</a> Index Entry Structure</h3>
+<p>Each entry in the search index contains:</p>
+<pre class="hljs" data-language="json"><code><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;title&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Markdown Features&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;/authoring/markdown-features/&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;description&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Learn about all the markdown features supported by MarkStack.&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;content&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;MarkStack supports standard markdown syntax plus several extensions...&quot;</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Source</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>title</code></td>
+<td>Frontmatter or filename</td>
+<td>Display in results, high-weight matching</td>
+</tr>
+<tr>
+<td><code>url</code></td>
+<td>Generated URL path</td>
+<td>Link to the page</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>Frontmatter or default</td>
+<td>Display in results, medium-weight matching</td>
+</tr>
+<tr>
+<td><code>content</code></td>
+<td>Rendered markdown (stripped)</td>
+<td>Full-text search</td>
+</tr>
+</tbody>
+</table>
+<h3 id="content-cleaning" tabindex="-1"><a class="heading-anchor" href="#content-cleaning" aria-hidden="true">#</a> Content Cleaning</h3>
+<p>The HTML content is stripped to plain text for indexing:</p>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-keyword">const</span> plainContent = processed.<span class="hljs-property">content</span>
+  <span class="hljs-comment">// Remove HTML tags</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/&lt;[^&gt;]*&gt;/g</span>, <span class="hljs-string">&#x27; &#x27;</span>)
+  
+  <span class="hljs-comment">// Decode HTML entities</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/&amp;quot;/g</span>, <span class="hljs-string">&#x27;&quot;&#x27;</span>)
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/&amp;amp;/g</span>, <span class="hljs-string">&#x27;&amp;&#x27;</span>)
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/&amp;lt;/g</span>, <span class="hljs-string">&#x27;&lt;&#x27;</span>)
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/&amp;gt;/g</span>, <span class="hljs-string">&#x27;&gt;&#x27;</span>)
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/&amp;#39;/g</span>, <span class="hljs-string">&quot;&#x27;&quot;</span>)
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/&amp;nbsp;/g</span>, <span class="hljs-string">&#x27; &#x27;</span>)
+  
+  <span class="hljs-comment">// Remove markdown syntax remnants</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/#{1,6}\s*/g</span>, <span class="hljs-string">&#x27;&#x27;</span>)              <span class="hljs-comment">// Headings</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/\*\*([^*]+)\*\*/g</span>, <span class="hljs-string">&#x27;$1&#x27;</span>)      <span class="hljs-comment">// Bold</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/\*([^*]+)\*/g</span>, <span class="hljs-string">&#x27;$1&#x27;</span>)          <span class="hljs-comment">// Italic</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/__([^_]+)__/g</span>, <span class="hljs-string">&#x27;$1&#x27;</span>)          <span class="hljs-comment">// Bold underscore</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/_([^_]+)_/g</span>, <span class="hljs-string">&#x27;$1&#x27;</span>)            <span class="hljs-comment">// Italic underscore</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/`([^`]+)`/g</span>, <span class="hljs-string">&#x27;$1&#x27;</span>)            <span class="hljs-comment">// Inline code</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/\[([^\]]+)\]\([^)]+\)/g</span>, <span class="hljs-string">&#x27;$1&#x27;</span>) <span class="hljs-comment">// Links</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/!\[([^\]]*)\]\([^)]+\)/g</span>, <span class="hljs-string">&#x27;&#x27;</span>)  <span class="hljs-comment">// Images</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/^[\s]*[-*+]\s+/gm</span>, <span class="hljs-string">&#x27;&#x27;</span>)         <span class="hljs-comment">// List markers</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/^[\s]*\d+\.\s+/gm</span>, <span class="hljs-string">&#x27;&#x27;</span>)         <span class="hljs-comment">// Numbered lists</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/^&gt;/gm</span>, <span class="hljs-string">&#x27;&#x27;</span>)                     <span class="hljs-comment">// Blockquotes</span>
+  
+  <span class="hljs-comment">// Normalize whitespace</span>
+  .<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/\s+/g</span>, <span class="hljs-string">&#x27; &#x27;</span>)
+  .<span class="hljs-title function_">trim</span>();
+</code></pre>
+<p>This ensures clean, searchable text without HTML noise or formatting artifacts.</p>
+<h2 id="client-side-search" tabindex="-1"><a class="heading-anchor" href="#client-side-search" aria-hidden="true">#</a> Client-Side Search</h2>
+<h3 id="index-loading" tabindex="-1"><a class="heading-anchor" href="#index-loading" aria-hidden="true">#</a> Index Loading</h3>
+<p>The search index is loaded lazily on first search:</p>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-keyword">let</span> searchIndex = <span class="hljs-literal">null</span>;
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">loadSearchIndex</span>(<span class="hljs-params"></span>) {
+  <span class="hljs-keyword">if</span> (searchIndex) <span class="hljs-keyword">return</span> searchIndex;  <span class="hljs-comment">// Already loaded</span>
+  
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-keyword">const</span> response = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">&#x27;/search-index.json&#x27;</span>);
+    searchIndex = <span class="hljs-keyword">await</span> response.<span class="hljs-title function_">json</span>();
+    <span class="hljs-keyword">return</span> searchIndex;
+  } <span class="hljs-keyword">catch</span> (error) {
+    <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">error</span>(<span class="hljs-string">&#x27;Failed to load search index:&#x27;</span>, error);
+    <span class="hljs-keyword">return</span> [];
+  }
+}
+</code></pre>
+<p>The index is cached in memory after loading. Subsequent searches use the cached data.</p>
+<h3 id="search-algorithm" tabindex="-1"><a class="heading-anchor" href="#search-algorithm" aria-hidden="true">#</a> Search Algorithm</h3>
+<p>The search function performs simple substring matching with relevance scoring:</p>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-keyword">function</span> <span class="hljs-title function_">performSearch</span>(<span class="hljs-params">query, index</span>) {
+  <span class="hljs-keyword">if</span> (!query || query.<span class="hljs-property">length</span> &lt; <span class="hljs-number">2</span>) <span class="hljs-keyword">return</span> [];
+  
+  <span class="hljs-keyword">const</span> queryLower = query.<span class="hljs-title function_">toLowerCase</span>();
+  <span class="hljs-keyword">const</span> words = queryLower.<span class="hljs-title function_">split</span>(<span class="hljs-regexp">/\s+/</span>).<span class="hljs-title function_">filter</span>(<span class="hljs-function"><span class="hljs-params">w</span> =&gt;</span> w.<span class="hljs-property">length</span> &gt; <span class="hljs-number">1</span>);
+  
+  <span class="hljs-keyword">const</span> results = [];
+  
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> item <span class="hljs-keyword">of</span> index) {
+    <span class="hljs-keyword">const</span> titleLower = item.<span class="hljs-property">title</span>.<span class="hljs-title function_">toLowerCase</span>();
+    <span class="hljs-keyword">const</span> contentLower = (item.<span class="hljs-property">content</span> || <span class="hljs-string">&#x27;&#x27;</span>).<span class="hljs-title function_">toLowerCase</span>();
+    <span class="hljs-keyword">const</span> descriptionLower = (item.<span class="hljs-property">description</span> || <span class="hljs-string">&#x27;&#x27;</span>).<span class="hljs-title function_">toLowerCase</span>();
+    
+    <span class="hljs-keyword">let</span> score = <span class="hljs-number">0</span>;
+    <span class="hljs-keyword">let</span> matchContext = <span class="hljs-string">&#x27;&#x27;</span>;
+    
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> word <span class="hljs-keyword">of</span> words) {
+      <span class="hljs-comment">// Title matches (highest weight)</span>
+      <span class="hljs-keyword">if</span> (titleLower.<span class="hljs-title function_">includes</span>(word)) {
+        score += titleLower === word ? <span class="hljs-number">100</span> : <span class="hljs-number">50</span>;
+      }
+      
+      <span class="hljs-comment">// URL matches</span>
+      <span class="hljs-keyword">if</span> (item.<span class="hljs-property">url</span>.<span class="hljs-title function_">toLowerCase</span>().<span class="hljs-title function_">includes</span>(word)) {
+        score += <span class="hljs-number">30</span>;
+      }
+      
+      <span class="hljs-comment">// Description matches</span>
+      <span class="hljs-keyword">if</span> (descriptionLower.<span class="hljs-title function_">includes</span>(word)) {
+        score += <span class="hljs-number">20</span>;
+      }
+      
+      <span class="hljs-comment">// Content matches</span>
+      <span class="hljs-keyword">const</span> contentIndex = contentLower.<span class="hljs-title function_">indexOf</span>(word);
+      <span class="hljs-keyword">if</span> (contentIndex !== -<span class="hljs-number">1</span>) {
+        score += <span class="hljs-number">10</span>;
+        
+        <span class="hljs-comment">// Bonus for multiple occurrences</span>
+        <span class="hljs-keyword">const</span> matches = (contentLower.<span class="hljs-title function_">match</span>(<span class="hljs-keyword">new</span> <span class="hljs-title class_">RegExp</span>(word, <span class="hljs-string">&#x27;gi&#x27;</span>)) || []).<span class="hljs-property">length</span>;
+        score += <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">min</span>(matches, <span class="hljs-number">10</span>);
+        
+        <span class="hljs-comment">// Extract context around match</span>
+        <span class="hljs-keyword">if</span> (!matchContext) {
+          <span class="hljs-keyword">const</span> start = <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">max</span>(<span class="hljs-number">0</span>, contentIndex - <span class="hljs-number">60</span>);
+          <span class="hljs-keyword">const</span> end = <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">min</span>(item.<span class="hljs-property">content</span>.<span class="hljs-property">length</span>, contentIndex + word.<span class="hljs-property">length</span> + <span class="hljs-number">100</span>);
+          matchContext = item.<span class="hljs-property">content</span>.<span class="hljs-title function_">substring</span>(start, end);
+          <span class="hljs-keyword">if</span> (start &gt; <span class="hljs-number">0</span>) matchContext = <span class="hljs-string">&#x27;...&#x27;</span> + matchContext;
+          <span class="hljs-keyword">if</span> (end &lt; item.<span class="hljs-property">content</span>.<span class="hljs-property">length</span>) matchContext = matchContext + <span class="hljs-string">&#x27;...&#x27;</span>;
+        }
+      }
+    }
+    
+    <span class="hljs-keyword">if</span> (score &gt; <span class="hljs-number">0</span>) {
+      results.<span class="hljs-title function_">push</span>({
+        ...item,
+        score,
+        <span class="hljs-attr">excerpt</span>: matchContext || item.<span class="hljs-property">description</span> || item.<span class="hljs-property">content</span>.<span class="hljs-title function_">substring</span>(<span class="hljs-number">0</span>, <span class="hljs-number">150</span>) + <span class="hljs-string">&#x27;...&#x27;</span>
+      });
+    }
+  }
+  
+  <span class="hljs-keyword">return</span> results
+    .<span class="hljs-title function_">sort</span>(<span class="hljs-function">(<span class="hljs-params">a, b</span>) =&gt;</span> b.<span class="hljs-property">score</span> - a.<span class="hljs-property">score</span>)
+    .<span class="hljs-title function_">slice</span>(<span class="hljs-number">0</span>, <span class="hljs-number">10</span>);
+}
+</code></pre>
+<h3 id="scoring-system" tabindex="-1"><a class="heading-anchor" href="#scoring-system" aria-hidden="true">#</a> Scoring System</h3>
+<p>Results are ranked by relevance score:</p>
+<table>
+<thead>
+<tr>
+<th>Match Location</th>
+<th>Points</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Exact title match</td>
+<td>100</td>
+</tr>
+<tr>
+<td>Title contains word</td>
+<td>50</td>
+</tr>
+<tr>
+<td>URL contains word</td>
+<td>30</td>
+</tr>
+<tr>
+<td>Description contains word</td>
+<td>20</td>
+</tr>
+<tr>
+<td>Content contains word</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Per additional content match</td>
+<td>+1 (max 10)</td>
+</tr>
+</tbody>
+</table>
+<p>Higher scores appear first in results.</p>
+<h3 id="multi-word-queries" tabindex="-1"><a class="heading-anchor" href="#multi-word-queries" aria-hidden="true">#</a> Multi-Word Queries</h3>
+<p>For queries with multiple words, each word contributes to the score independently:</p>
+<p>Query: “markdown syntax”</p>
+<ul>
+<li>Page about “Markdown Features” with “syntax” in content scores: 50 (title) + 10 (content) = 60</li>
+<li>Page about “Syntax Highlighting” with “markdown” in content scores: 50 (title) + 10 (content) = 60</li>
+</ul>
+<p>All words must match for a result to appear.</p>
+<h2 id="search-interface" tabindex="-1"><a class="heading-anchor" href="#search-interface" aria-hidden="true">#</a> Search Interface</h2>
+<h3 id="dropdown-results" tabindex="-1"><a class="heading-anchor" href="#dropdown-results" aria-hidden="true">#</a> Dropdown Results</h3>
+<p>As you type, results appear in a dropdown below the search input:</p>
+<pre class="hljs" data-language="javascript"><code>searchInput.<span class="hljs-title function_">addEventListener</span>(<span class="hljs-string">&#x27;input&#x27;</span>, <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>) {
+  <span class="hljs-keyword">const</span> query = e.<span class="hljs-property">target</span>.<span class="hljs-property">value</span>.<span class="hljs-title function_">trim</span>();
+  
+  <span class="hljs-keyword">if</span> (query.<span class="hljs-property">length</span> &lt; <span class="hljs-number">2</span>) {
+    <span class="hljs-title function_">hideResults</span>();
+    <span class="hljs-keyword">return</span>;
+  }
+  
+  <span class="hljs-comment">// Debounce to avoid excessive searches</span>
+  <span class="hljs-built_in">clearTimeout</span>(searchTimeout);
+  searchTimeout = <span class="hljs-built_in">setTimeout</span>(<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) {
+    <span class="hljs-keyword">const</span> index = <span class="hljs-keyword">await</span> <span class="hljs-title function_">loadSearchIndex</span>();
+    <span class="hljs-keyword">const</span> results = <span class="hljs-title function_">performSearch</span>(query, index);
+    <span class="hljs-title function_">renderResults</span>(results, query);
+  }, <span class="hljs-number">150</span>);
+});
+</code></pre>
+<h3 id="result-rendering" tabindex="-1"><a class="heading-anchor" href="#result-rendering" aria-hidden="true">#</a> Result Rendering</h3>
+<p>Each result shows title, excerpt, and URL:</p>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-keyword">function</span> <span class="hljs-title function_">renderResults</span>(<span class="hljs-params">results, query</span>) {
+  <span class="hljs-keyword">let</span> html = <span class="hljs-string">&#x27;&#x27;</span>;
+  
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> item <span class="hljs-keyword">of</span> results) {
+    html += <span class="hljs-string">&#x27;&lt;a href=&quot;&#x27;</span> + item.<span class="hljs-property">url</span> + <span class="hljs-string">&#x27;&quot; class=&quot;search-result-item&quot;&gt;&#x27;</span>;
+    html += <span class="hljs-string">&#x27;&lt;div class=&quot;search-result-title&quot;&gt;&#x27;</span> + <span class="hljs-title function_">highlightMatch</span>(item.<span class="hljs-property">title</span>, query) + <span class="hljs-string">&#x27;&lt;/div&gt;&#x27;</span>;
+    html += <span class="hljs-string">&#x27;&lt;div class=&quot;search-result-excerpt&quot;&gt;&#x27;</span> + <span class="hljs-title function_">highlightMatch</span>(item.<span class="hljs-property">excerpt</span>, query) + <span class="hljs-string">&#x27;&lt;/div&gt;&#x27;</span>;
+    html += <span class="hljs-string">&#x27;&lt;div class=&quot;search-result-path&quot;&gt;&#x27;</span> + item.<span class="hljs-property">url</span> + <span class="hljs-string">&#x27;&lt;/div&gt;&#x27;</span>;
+    html += <span class="hljs-string">&#x27;&lt;/a&gt;&#x27;</span>;
+  }
+  
+  searchResults.<span class="hljs-property">innerHTML</span> = html;
+  searchResults.<span class="hljs-property">classList</span>.<span class="hljs-title function_">add</span>(<span class="hljs-string">&#x27;active&#x27;</span>);
+}
+</code></pre>
+<h3 id="match-highlighting" tabindex="-1"><a class="heading-anchor" href="#match-highlighting" aria-hidden="true">#</a> Match Highlighting</h3>
+<p>Matching terms are highlighted in results:</p>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-keyword">function</span> <span class="hljs-title function_">highlightMatch</span>(<span class="hljs-params">text, query</span>) {
+  <span class="hljs-keyword">if</span> (!text) <span class="hljs-keyword">return</span> <span class="hljs-string">&#x27;&#x27;</span>;
+  
+  <span class="hljs-keyword">const</span> words = query.<span class="hljs-title function_">toLowerCase</span>().<span class="hljs-title function_">split</span>(<span class="hljs-regexp">/\s+/</span>).<span class="hljs-title function_">filter</span>(<span class="hljs-function"><span class="hljs-params">w</span> =&gt;</span> w.<span class="hljs-property">length</span> &gt; <span class="hljs-number">1</span>);
+  <span class="hljs-keyword">let</span> result = <span class="hljs-title function_">escapeHtml</span>(text);
+  
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> word <span class="hljs-keyword">of</span> words) {
+    <span class="hljs-keyword">const</span> regex = <span class="hljs-keyword">new</span> <span class="hljs-title class_">RegExp</span>(<span class="hljs-string">&#x27;(&#x27;</span> + <span class="hljs-title function_">escapeRegex</span>(word) + <span class="hljs-string">&#x27;)&#x27;</span>, <span class="hljs-string">&#x27;gi&#x27;</span>);
+    result = result.<span class="hljs-title function_">replace</span>(regex, <span class="hljs-string">&#x27;&lt;mark&gt;$1&lt;/mark&gt;&#x27;</span>);
+  }
+  
+  <span class="hljs-keyword">return</span> result;
+}
+</code></pre>
+<h3 id="full-results-modal" tabindex="-1"><a class="heading-anchor" href="#full-results-modal" aria-hidden="true">#</a> Full Results Modal</h3>
+<p>Pressing Enter opens a modal with all results:</p>
+<pre class="hljs" data-language="javascript"><code>searchInput.<span class="hljs-title function_">addEventListener</span>(<span class="hljs-string">&#x27;keydown&#x27;</span>, <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>) {
+  <span class="hljs-keyword">if</span> (e.<span class="hljs-property">key</span> === <span class="hljs-string">&#x27;Enter&#x27;</span>) {
+    e.<span class="hljs-title function_">preventDefault</span>();
+    <span class="hljs-keyword">const</span> query = searchInput.<span class="hljs-property">value</span>.<span class="hljs-title function_">trim</span>();
+    <span class="hljs-keyword">if</span> (query.<span class="hljs-property">length</span> &gt;= <span class="hljs-number">2</span>) {
+      <span class="hljs-keyword">const</span> index = <span class="hljs-keyword">await</span> <span class="hljs-title function_">loadSearchIndex</span>();
+      <span class="hljs-keyword">const</span> results = <span class="hljs-title function_">performSearch</span>(query, index);
+      <span class="hljs-title function_">showFullSearchResults</span>(query, results);
+    }
+  }
+});
+</code></pre>
+<h3 id="keyboard-navigation" tabindex="-1"><a class="heading-anchor" href="#keyboard-navigation" aria-hidden="true">#</a> Keyboard Navigation</h3>
+<p>The search interface supports keyboard navigation:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Ctrl+K</code></td>
+<td>Focus search input</td>
+</tr>
+<tr>
+<td><code>↓</code></td>
+<td>Move to first/next result</td>
+</tr>
+<tr>
+<td><code>↑</code></td>
+<td>Move to previous result</td>
+</tr>
+<tr>
+<td><code>Enter</code></td>
+<td>Open selected result or show full results</td>
+</tr>
+<tr>
+<td><code>Escape</code></td>
+<td>Close search dropdown</td>
+</tr>
+</tbody>
+</table>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-comment">// Global shortcut</span>
+<span class="hljs-variable language_">document</span>.<span class="hljs-title function_">addEventListener</span>(<span class="hljs-string">&#x27;keydown&#x27;</span>, <span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>) {
+  <span class="hljs-keyword">if</span> ((e.<span class="hljs-property">ctrlKey</span> || e.<span class="hljs-property">metaKey</span>) &amp;&amp; e.<span class="hljs-property">key</span> === <span class="hljs-string">&#x27;k&#x27;</span>) {
+    e.<span class="hljs-title function_">preventDefault</span>();
+    searchInput.<span class="hljs-title function_">focus</span>();
+    searchInput.<span class="hljs-title function_">select</span>();
+  }
+});
+
+<span class="hljs-comment">// Navigate results</span>
+searchResults.<span class="hljs-title function_">addEventListener</span>(<span class="hljs-string">&#x27;keydown&#x27;</span>, <span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>) {
+  <span class="hljs-keyword">const</span> current = <span class="hljs-variable language_">document</span>.<span class="hljs-property">activeElement</span>;
+  
+  <span class="hljs-keyword">if</span> (e.<span class="hljs-property">key</span> === <span class="hljs-string">&#x27;ArrowDown&#x27;</span>) {
+    e.<span class="hljs-title function_">preventDefault</span>();
+    <span class="hljs-keyword">const</span> next = current.<span class="hljs-property">nextElementSibling</span>;
+    <span class="hljs-keyword">if</span> (next) next.<span class="hljs-title function_">focus</span>();
+  }
+  
+  <span class="hljs-keyword">if</span> (e.<span class="hljs-property">key</span> === <span class="hljs-string">&#x27;ArrowUp&#x27;</span>) {
+    e.<span class="hljs-title function_">preventDefault</span>();
+    <span class="hljs-keyword">const</span> prev = current.<span class="hljs-property">previousElementSibling</span>;
+    <span class="hljs-keyword">if</span> (prev) prev.<span class="hljs-title function_">focus</span>();
+    <span class="hljs-keyword">else</span> searchInput.<span class="hljs-title function_">focus</span>();
+  }
+});
+</code></pre>
+<h2 id="index-size-considerations" tabindex="-1"><a class="heading-anchor" href="#index-size-considerations" aria-hidden="true">#</a> Index Size Considerations</h2>
+<h3 id="typical-sizes" tabindex="-1"><a class="heading-anchor" href="#typical-sizes" aria-hidden="true">#</a> Typical Sizes</h3>
+<p>The search index size depends on content volume:</p>
+<table>
+<thead>
+<tr>
+<th>Pages</th>
+<th>Approximate Size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10 pages</td>
+<td>~20 KB</td>
+</tr>
+<tr>
+<td>50 pages</td>
+<td>~100 KB</td>
+</tr>
+<tr>
+<td>200 pages</td>
+<td>~400 KB</td>
+</tr>
+<tr>
+<td>500 pages</td>
+<td>~1 MB</td>
+</tr>
+</tbody>
+</table>
+<h3 id="optimization-strategies" tabindex="-1"><a class="heading-anchor" href="#optimization-strategies" aria-hidden="true">#</a> Optimization Strategies</h3>
+<p>For large sites, consider these optimizations:</p>
+<p><strong>1. Gzip Compression</strong></p>
+<p>Most servers compress JSON automatically. A 400 KB index compresses to approximately 100 KB.</p>
+<p><strong>2. Truncate Content</strong></p>
+<p>Modify the build script to limit content length:</p>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-attr">content</span>: plainContent.<span class="hljs-title function_">substring</span>(<span class="hljs-number">0</span>, <span class="hljs-number">5000</span>)  <span class="hljs-comment">// First 5000 chars only</span>
+</code></pre>
+<p><strong>3. Exclude Pages</strong></p>
+<p>Add frontmatter to exclude pages from search:</p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-meta">---</span>
+<span class="hljs-attr">title:</span> <span class="hljs-string">Internal</span> <span class="hljs-string">Notes</span>
+<span class="hljs-attr">searchable:</span> <span class="hljs-literal">false</span>
+<span class="hljs-meta">---
+</span></code></pre>
+<p>Then filter during index generation:</p>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-keyword">if</span> (frontmatter.<span class="hljs-property">searchable</span> !== <span class="hljs-literal">false</span>) {
+  searchIndex.<span class="hljs-title function_">push</span>({...});
+}
+</code></pre>
+<p><strong>4. Split Index</strong></p>
+<p>For very large sites, split the index by section:</p>
+<pre class="hljs"><code>/search-index-getting-started.json
+/search-index-authoring.json
+/search-index-reference.json
+</code></pre>
+<p>Load only relevant indexes based on current page or user selection.</p>
+<h2 id="limitations" tabindex="-1"><a class="heading-anchor" href="#limitations" aria-hidden="true">#</a> Limitations</h2>
+<h3 id="no-fuzzy-matching" tabindex="-1"><a class="heading-anchor" href="#no-fuzzy-matching" aria-hidden="true">#</a> No Fuzzy Matching</h3>
+<p>The current search uses exact substring matching. “instal” will not match “installation”. Consider adding fuzzy matching for better UX:</p>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-comment">// Example with Fuse.js (would need to add as dependency)</span>
+<span class="hljs-keyword">const</span> fuse = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Fuse</span>(index, {
+  <span class="hljs-attr">keys</span>: [<span class="hljs-string">&#x27;title&#x27;</span>, <span class="hljs-string">&#x27;description&#x27;</span>, <span class="hljs-string">&#x27;content&#x27;</span>],
+  <span class="hljs-attr">threshold</span>: <span class="hljs-number">0.4</span>
+});
+</code></pre>
+<h3 id="no-stemming" tabindex="-1"><a class="heading-anchor" href="#no-stemming" aria-hidden="true">#</a> No Stemming</h3>
+<p>“running” and “run” are treated as different words. For English content, a stemming algorithm would improve results.</p>
+<h3 id="client-side-only" tabindex="-1"><a class="heading-anchor" href="#client-side-only" aria-hidden="true">#</a> Client-Side Only</h3>
+<p>Search happens entirely in the browser. For sites with thousands of pages, server-side search (Algolia, Elasticsearch) may be more appropriate.</p>
+<h2 id="extending-search" tabindex="-1"><a class="heading-anchor" href="#extending-search" aria-hidden="true">#</a> Extending Search</h2>
+<h3 id="custom-scoring" tabindex="-1"><a class="heading-anchor" href="#custom-scoring" aria-hidden="true">#</a> Custom Scoring</h3>
+<p>Modify the <code>performSearch</code> function to adjust scoring weights or add new criteria.</p>
+<h3 id="search-analytics" tabindex="-1"><a class="heading-anchor" href="#search-analytics" aria-hidden="true">#</a> Search Analytics</h3>
+<p>Track what users search for:</p>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-keyword">function</span> <span class="hljs-title function_">performSearch</span>(<span class="hljs-params">query, index</span>) {
+  <span class="hljs-comment">// Track search</span>
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> gtag === <span class="hljs-string">&#x27;function&#x27;</span>) {
+    <span class="hljs-title function_">gtag</span>(<span class="hljs-string">&#x27;event&#x27;</span>, <span class="hljs-string">&#x27;search&#x27;</span>, { <span class="hljs-attr">search_term</span>: query });
+  }
+  
+  <span class="hljs-comment">// ... existing search logic</span>
+}
+</code></pre>
+<h3 id="filtering-by-section" tabindex="-1"><a class="heading-anchor" href="#filtering-by-section" aria-hidden="true">#</a> Filtering by Section</h3>
+<p>Add section-based filtering:</p>
+<pre class="hljs" data-language="javascript"><code><span class="hljs-keyword">function</span> <span class="hljs-title function_">performSearch</span>(<span class="hljs-params">query, index, section = <span class="hljs-literal">null</span></span>) {
+  <span class="hljs-keyword">let</span> filteredIndex = index;
+  
+  <span class="hljs-keyword">if</span> (section) {
+    filteredIndex = index.<span class="hljs-title function_">filter</span>(<span class="hljs-function"><span class="hljs-params">item</span> =&gt;</span> item.<span class="hljs-property">url</span>.<span class="hljs-title function_">startsWith</span>(<span class="hljs-string">&#x27;/&#x27;</span> + section + <span class="hljs-string">&#x27;/&#x27;</span>));
+  }
+  
+  <span class="hljs-comment">// ... existing search logic on filteredIndex</span>
+}
+</code></pre>
+
+      </article>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <p>Built with <a href="https://github.com/KineticEnforcer/MarkStack" target="_blank" rel="noopener noreferrer">MarkStack</a></p>
+      <p class="copyright">© 2026 KineticEnforcer. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="/markstackdemo/js/app.js"></script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+    });
+  </script>
+</body>
+</html>

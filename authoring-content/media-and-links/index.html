@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Apply theme immediately to prevent flash of unstyled content (FOUC)
+    (function() {
+      const theme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script>
+    // Apply sidebar state immediately to prevent layout shift
+    (function() {
+      const savedState = localStorage.getItem('sidebar-state');
+      if (savedState === 'collapsed') {
+        document.documentElement.classList.add('sidebar-collapsed');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Complete guide to adding images, downloadable files, and links in MarkStack documentation, including file organization, path conventions, and accessibility best practices.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta property="og:title" content="Media and Links | MarkStack">
+  <meta property="og:description" content="Complete guide to adding images, downloadable files, and links in MarkStack documentation, including file organization, path conventions, and accessibility best practices.">
+  <meta property="og:url" content="https://kineticenforcer.github.io/markstackdemo/authoring-content/media-and-links">
+  <meta property="og:type" content="website">
+  <title>Media and Links | MarkStack</title>
+  <link rel="stylesheet" href="/markstackdemo/css/main.css">
+  <link rel="stylesheet" href="/markstackdemo/css/hljs-theme.css">
+  <link rel="icon" href="/markstackdemo/svg/logo.svg" type="image/svg+xml">
+</head>
+<body data-baseurl="/markstackdemo">
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/markstackdemo/" class="site-logo">
+        <img src="/markstackdemo/svg/logo.svg" alt="Logo" class="logo-icon" width="32" height="32">
+        <span class="logo-text">MarkStack</span>
+      </a>
+      
+      <div class="header-search">
+        <div class="search-container">
+          <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search documentation..." autocomplete="off">
+          <kbd class="search-shortcut">Ctrl+K</kbd>
+        </div>
+        <div id="search-results" class="search-results"></div>
+      </div>
+      
+      <div class="header-actions">
+        <a href="https://github.com/KineticEnforcer/MarkStack" target="_blank" rel="noopener noreferrer" class="github-link" aria-label="View on GitHub">
+          <svg class="github-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+        </a>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="breadcrumb-bar">
+    <div class="breadcrumb-container">
+      <a href="/markstackdemo/" class="breadcrumb-home" title="Home"><svg class="breadcrumb-home-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V9.5a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v4.5h2.25a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z"/></svg></a><span class="breadcrumb-separator">/</span><a href="/markstackdemo/authoring-content/">Authoring Content</a><span class="breadcrumb-separator">/</span><span class="breadcrumb-current">Media and Links</span>
+    </div>
+  </div>
+
+  <button class="sidebar-collapse-toggle" id="sidebar-toggle" title="Toggle sidebar">
+    <svg class="sidebar-toggle-icon collapse-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+      <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/>
+    </svg>
+    <svg class="sidebar-toggle-icon expand-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+      <path d="M8.22 3.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.53a.75.75 0 0 1 0-1.06Z"/>
+    </svg>
+  </button>
+
+  <div class="main-layout">
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <ul class="sidebar-list sidebar-level-0">
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/architecture/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Architecture</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/build-pipeline"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Build Pipeline</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/navigation-and-routing"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Navigation and Routing</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/search-indexing"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Search Indexing</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder sidebar-expanded" data-state="expanded"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"/></svg></button><a href="/markstackdemo/authoring-content/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Authoring Content</a></div><div class="sidebar-children expanded"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/content-model"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Content Model</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/examples"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Examples</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/frontmatter"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Frontmatter</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/markdown-features"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Markdown Features</a></li>
+<li class="sidebar-item sidebar-file sidebar-current"><a href="/markstackdemo/authoring-content/media-and-links"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Media and Links</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/build-and-deploy/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Build and Deploy</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/cicd-integration"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>CI/CD Integration</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/commands-reference"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Commands Reference</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/deployment-guide"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Deployment Guide</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/configuration/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Configuration</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/configuration/homepage-content"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Homepage Content</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/configuration/site-config"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Site Config</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/customization/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Customization</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/customization/templates"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Templates</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/customization/themes-and-styling"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Themes and Styling</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/getting-started/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Getting Started</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/installation"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Installation</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/project-structure"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Project Structure</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/quickstart"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Quickstart</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/troubleshooting/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Troubleshooting</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/troubleshooting/common-issues"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Common Issues</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/troubleshooting/frequently-asked-questions"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Frequently Asked Questions</a></li>
+</ul></div></li>
+</ul>
+      </nav>
+    </aside>
+    
+    <main class="content">
+      <article class="article">
+        <h1 id="media-and-links" tabindex="-1"><a class="heading-anchor" href="#media-and-links" aria-hidden="true">#</a> Media and Links</h1>
+<p>This guide covers everything about adding non-text content to your documentation: images, downloadable files, and links to other pages. Understanding these conventions ensures your assets load correctly and your links work reliably.</p>
+<h2 id="understanding-static-assets" tabindex="-1"><a class="heading-anchor" href="#understanding-static-assets" aria-hidden="true">#</a> Understanding Static Assets</h2>
+<p>MarkStack copies everything in the <code>static/</code> folder to <code>dist/</code> during each build. This is where you place files you want to serve alongside your documentation:</p>
+<pre class="hljs"><code>static/
+├── css/          # Stylesheets
+├── js/           # JavaScript
+├── svg/          # SVG files (logo, icons)
+├── images/       # PNG, JPG, GIF images
+└── files/        # Downloadable documents (PDFs, ZIPs)
+</code></pre>
+<p>When you reference these files in markdown, use absolute paths starting with <code>/</code>:</p>
+<ul>
+<li><code>static/images/diagram.png</code> becomes <code>/images/diagram.png</code></li>
+<li><code>static/files/guide.pdf</code> becomes <code>/files/guide.pdf</code></li>
+</ul>
+<h2 id="images" tabindex="-1"><a class="heading-anchor" href="#images" aria-hidden="true">#</a> Images</h2>
+<p>Images enhance documentation by showing concepts visually, providing screenshots of interfaces, and displaying diagrams that would be difficult to explain in words.</p>
+<h3 id="adding-images-to-your-project" tabindex="-1"><a class="heading-anchor" href="#adding-images-to-your-project" aria-hidden="true">#</a> Adding Images to Your Project</h3>
+<ol>
+<li>Create an images folder if it does not exist: <code>static/images/</code></li>
+<li>Copy your image file into that folder</li>
+<li>Reference it in your markdown</li>
+</ol>
+<pre class="hljs" data-language="markdown"><code>![<span class="hljs-string">Descriptive alt text</span>](<span class="hljs-link">/images/your-image.png</span>)
+</code></pre>
+<h3 id="image-syntax" tabindex="-1"><a class="heading-anchor" href="#image-syntax" aria-hidden="true">#</a> Image Syntax</h3>
+<p>The basic syntax for images is:</p>
+<pre class="hljs" data-language="markdown"><code>![<span class="hljs-string">Alt text</span>](<span class="hljs-link">/path/to/image.png</span>)
+</code></pre>
+<p>You can add an optional title that appears as a tooltip:</p>
+<pre class="hljs" data-language="markdown"><code>![<span class="hljs-string">Alt text</span>](<span class="hljs-link">/path/to/image.png &quot;Tooltip text&quot;</span>)
+</code></pre>
+<h3 id="complete-example" tabindex="-1"><a class="heading-anchor" href="#complete-example" aria-hidden="true">#</a> Complete Example</h3>
+<p>Suppose you have a screenshot of the MarkStack sidebar. You would:</p>
+<ol>
+<li>Save it as <code>static/images/sidebar-screenshot.png</code></li>
+<li>Reference it in markdown:</li>
+</ol>
+<pre class="hljs" data-language="markdown"><code>The sidebar shows your documentation structure:
+
+![<span class="hljs-string">Screenshot of the MarkStack sidebar navigation</span>](<span class="hljs-link">/images/sidebar-screenshot.png &quot;Sidebar Navigation&quot;</span>)
+
+Click any item to navigate to that page.
+</code></pre>
+<h3 id="image-organization" tabindex="-1"><a class="heading-anchor" href="#image-organization" aria-hidden="true">#</a> Image Organization</h3>
+<p>For sites with many images, organize them into subfolders:</p>
+<pre class="hljs"><code>static/images/
+├── getting-started/
+│   ├── install-step-1.png
+│   └── install-step-2.png
+├── guides/
+│   ├── dashboard-overview.png
+│   └── settings-panel.png
+└── diagrams/
+    ├── architecture.svg
+    └── data-flow.svg
+</code></pre>
+<p>Reference them with the full path:</p>
+<pre class="hljs" data-language="markdown"><code>![<span class="hljs-string">Installation step 1</span>](<span class="hljs-link">/images/getting-started/install-step-1.png</span>)
+</code></pre>
+<h3 id="svg-files" tabindex="-1"><a class="heading-anchor" href="#svg-files" aria-hidden="true">#</a> SVG Files</h3>
+<p>SVG (Scalable Vector Graphics) files are ideal for diagrams, logos, and icons because they scale without losing quality. Store them in <code>static/svg/</code> or <code>static/images/</code>:</p>
+<pre class="hljs" data-language="markdown"><code>![<span class="hljs-string">System architecture</span>](<span class="hljs-link">/svg/architecture.svg</span>)
+</code></pre>
+<h3 id="image-format-guidelines" tabindex="-1"><a class="heading-anchor" href="#image-format-guidelines" aria-hidden="true">#</a> Image Format Guidelines</h3>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Best For</th>
+<th>Characteristics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PNG</td>
+<td>Screenshots, UI elements</td>
+<td>Lossless, supports transparency</td>
+</tr>
+<tr>
+<td>JPG</td>
+<td>Photographs, complex images</td>
+<td>Smaller files, no transparency</td>
+</tr>
+<tr>
+<td>SVG</td>
+<td>Diagrams, logos, icons</td>
+<td>Scalable, small file size</td>
+</tr>
+<tr>
+<td>GIF</td>
+<td>Simple animations</td>
+<td>Limited colors, animation support</td>
+</tr>
+<tr>
+<td>WebP</td>
+<td>Modern browsers</td>
+<td>Best compression, broad support</td>
+</tr>
+</tbody>
+</table>
+<h3 id="image-optimization" tabindex="-1"><a class="heading-anchor" href="#image-optimization" aria-hidden="true">#</a> Image Optimization</h3>
+<p>Large images slow down page loading. Optimize images before adding them:</p>
+<ul>
+<li>Resize images to the maximum size they will display (no need for 4000px images if they display at 800px)</li>
+<li>Compress using tools like ImageOptim, TinyPNG, or Squoosh</li>
+<li>Use appropriate formats (PNG for screenshots, JPG for photos)</li>
+<li>Consider SVG for diagrams and illustrations</li>
+</ul>
+<h3 id="why-absolute-paths-matter" tabindex="-1"><a class="heading-anchor" href="#why-absolute-paths-matter" aria-hidden="true">#</a> Why Absolute Paths Matter</h3>
+<p>Always use absolute paths starting with <code>/</code> for images:</p>
+<pre class="hljs" data-language="markdown"><code>&lt;!-- Correct: absolute path --&gt;
+![<span class="hljs-string">Diagram</span>](<span class="hljs-link">/images/diagram.png</span>)
+
+&lt;!-- Incorrect: relative path --&gt;
+![<span class="hljs-string">Diagram</span>](<span class="hljs-link">../images/diagram.png</span>)
+![<span class="hljs-string">Diagram</span>](<span class="hljs-link">images/diagram.png</span>)
+</code></pre>
+<p>Absolute paths work from any page regardless of nesting depth. Relative paths break when pages move or when the same content appears at different URL depths.</p>
+<h2 id="downloadable-files" tabindex="-1"><a class="heading-anchor" href="#downloadable-files" aria-hidden="true">#</a> Downloadable Files</h2>
+<p>Provide downloadable content like PDFs, ZIP archives, or sample files by placing them in <code>static/files/</code> and linking to them.</p>
+<h3 id="adding-downloadable-files" tabindex="-1"><a class="heading-anchor" href="#adding-downloadable-files" aria-hidden="true">#</a> Adding Downloadable Files</h3>
+<ol>
+<li>Create the files folder: <code>static/files/</code></li>
+<li>Add your file (e.g., <code>user-guide.pdf</code>)</li>
+<li>Link to it in markdown:</li>
+</ol>
+<pre class="hljs" data-language="markdown"><code>Download the complete [<span class="hljs-string">User Guide (PDF)</span>](<span class="hljs-link">/files/user-guide.pdf</span>).
+</code></pre>
+<h3 id="common-file-types" tabindex="-1"><a class="heading-anchor" href="#common-file-types" aria-hidden="true">#</a> Common File Types</h3>
+<table>
+<thead>
+<tr>
+<th>File Type</th>
+<th>Example Path</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PDF documents</td>
+<td><code>/files/user-guide.pdf</code></td>
+<td>Printable guides, specifications</td>
+</tr>
+<tr>
+<td>ZIP archives</td>
+<td><code>/files/sample-project.zip</code></td>
+<td>Code samples, starter kits</td>
+</tr>
+<tr>
+<td>Configuration files</td>
+<td><code>/files/config-template.yaml</code></td>
+<td>Templates for users to download</td>
+</tr>
+<tr>
+<td>Data files</td>
+<td><code>/files/sample-data.csv</code></td>
+<td>Example datasets</td>
+</tr>
+</tbody>
+</table>
+<h3 id="file-organization" tabindex="-1"><a class="heading-anchor" href="#file-organization" aria-hidden="true">#</a> File Organization</h3>
+<p>For many downloadable files, organize by category:</p>
+<pre class="hljs"><code>static/files/
+├── guides/
+│   ├── getting-started.pdf
+│   └── advanced-usage.pdf
+├── samples/
+│   ├── starter-project.zip
+│   └── example-config.yaml
+└── reference/
+    └── api-specification.pdf
+</code></pre>
+<p>Reference with full paths:</p>
+<pre class="hljs" data-language="markdown"><code>[<span class="hljs-string">Download the starter project</span>](<span class="hljs-link">/files/samples/starter-project.zip</span>)
+</code></pre>
+<h2 id="internal-links" tabindex="-1"><a class="heading-anchor" href="#internal-links" aria-hidden="true">#</a> Internal Links</h2>
+<p>Internal links connect pages within your documentation. They help readers navigate to related content and create a cohesive documentation experience.</p>
+<h3 id="link-syntax" tabindex="-1"><a class="heading-anchor" href="#link-syntax" aria-hidden="true">#</a> Link Syntax</h3>
+<pre class="hljs" data-language="markdown"><code>[<span class="hljs-string">Link text</span>](<span class="hljs-link">/path/to/page/</span>)
+</code></pre>
+<h3 id="linking-to-pages" tabindex="-1"><a class="heading-anchor" href="#linking-to-pages" aria-hidden="true">#</a> Linking to Pages</h3>
+<p>Link to other documentation pages using their URL path:</p>
+<pre class="hljs" data-language="markdown"><code>See the [<span class="hljs-string">Installation Guide</span>](<span class="hljs-link">/installation/</span>) for setup instructions.
+
+Review the [<span class="hljs-string">Configuration Reference</span>](<span class="hljs-link">/configuration/siteconfig/</span>) for all options.
+</code></pre>
+<h3 id="linking-to-category-landing-pages" tabindex="-1"><a class="heading-anchor" href="#linking-to-category-landing-pages" aria-hidden="true">#</a> Linking to Category Landing Pages</h3>
+<p>Category landing pages end with a trailing slash:</p>
+<pre class="hljs" data-language="markdown"><code>Explore the [<span class="hljs-string">Authoring Content</span>](<span class="hljs-link">/authoring/</span>) section for writing guides.
+</code></pre>
+<h3 id="linking-to-page-sections" tabindex="-1"><a class="heading-anchor" href="#linking-to-page-sections" aria-hidden="true">#</a> Linking to Page Sections</h3>
+<p>Link to specific sections using anchor IDs:</p>
+<pre class="hljs" data-language="markdown"><code>See the [<span class="hljs-string">Code Blocks</span>](<span class="hljs-link">#code-blocks</span>) section below.
+
+Refer to the [<span class="hljs-string">GitHub Actions example</span>](<span class="hljs-link">/build-deploy/ci-cd/#example-github-actions</span>).
+</code></pre>
+<p>Anchor IDs are generated from heading text: lowercased, spaces become hyphens, special characters removed.</p>
+<h3 id="best-practices-for-internal-links" tabindex="-1"><a class="heading-anchor" href="#best-practices-for-internal-links" aria-hidden="true">#</a> Best Practices for Internal Links</h3>
+<table>
+<thead>
+<tr>
+<th>Practice</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Use absolute paths</td>
+<td><code>/authoring/frontmatter/</code> not <code>../frontmatter/</code></td>
+</tr>
+<tr>
+<td>Include trailing slashes</td>
+<td><code>/getting-started/</code> not <code>/getting-started</code></td>
+</tr>
+<tr>
+<td>Use descriptive link text</td>
+<td>“read the installation guide” not “click here”</td>
+</tr>
+<tr>
+<td>Check links after renaming</td>
+<td>Title changes break links based on old slugs</td>
+</tr>
+</tbody>
+</table>
+<h3 id="example-navigation-links" tabindex="-1"><a class="heading-anchor" href="#example-navigation-links" aria-hidden="true">#</a> Example: Navigation Links</h3>
+<p>Create a “Related Pages” section at the bottom of pages:</p>
+<pre class="hljs" data-language="markdown"><code><span class="hljs-section">## Related Pages</span>
+
+<span class="hljs-bullet">-</span> [<span class="hljs-string">Markdown Features</span>](<span class="hljs-link">/authoring/markdown-features/</span>) for formatting options
+<span class="hljs-bullet">-</span> [<span class="hljs-string">Frontmatter</span>](<span class="hljs-link">/authoring/frontmatter/</span>) for metadata fields
+<span class="hljs-bullet">-</span> [<span class="hljs-string">Examples</span>](<span class="hljs-link">/authoring/examples/</span>) for copy-ready templates
+</code></pre>
+<h2 id="external-links" tabindex="-1"><a class="heading-anchor" href="#external-links" aria-hidden="true">#</a> External Links</h2>
+<p>External links point to resources outside your documentation site.</p>
+<h3 id="basic-external-links" tabindex="-1"><a class="heading-anchor" href="#basic-external-links" aria-hidden="true">#</a> Basic External Links</h3>
+<pre class="hljs" data-language="markdown"><code>[<span class="hljs-string">Node.js</span>](<span class="hljs-link">https://nodejs.org</span>) is required to run MarkStack.
+</code></pre>
+<h3 id="external-links-with-titles" tabindex="-1"><a class="heading-anchor" href="#external-links-with-titles" aria-hidden="true">#</a> External Links with Titles</h3>
+<p>Add tooltip text with a title:</p>
+<pre class="hljs" data-language="markdown"><code>[<span class="hljs-string">Highlight.js</span>](<span class="hljs-link">https://highlightjs.org &quot;Syntax highlighting library&quot;</span>) provides code highlighting.
+</code></pre>
+<h3 id="when-to-link-externally" tabindex="-1"><a class="heading-anchor" href="#when-to-link-externally" aria-hidden="true">#</a> When to Link Externally</h3>
+<p>External links are helpful for:</p>
+<ul>
+<li>Official documentation of tools you reference</li>
+<li>Specifications and standards</li>
+<li>Additional resources for deeper learning</li>
+<li>Credit and attribution</li>
+</ul>
+<h3 id="external-link-considerations" tabindex="-1"><a class="heading-anchor" href="#external-link-considerations" aria-hidden="true">#</a> External Link Considerations</h3>
+<p>External links can break if the destination page moves or disappears. Consider:</p>
+<ul>
+<li>Linking to stable, authoritative sources (official documentation, specifications)</li>
+<li>Periodically checking that external links still work</li>
+<li>Avoiding links to content that changes frequently</li>
+</ul>
+<h2 id="accessibility" tabindex="-1"><a class="heading-anchor" href="#accessibility" aria-hidden="true">#</a> Accessibility</h2>
+<p>Accessible documentation works for everyone, including people using screen readers, keyboard navigation, or other assistive technologies.</p>
+<h3 id="alt-text-for-images" tabindex="-1"><a class="heading-anchor" href="#alt-text-for-images" aria-hidden="true">#</a> Alt Text for Images</h3>
+<p>Every image needs descriptive alt text that conveys the image’s purpose:</p>
+<pre class="hljs" data-language="markdown"><code>&lt;!-- Good: describes what the image shows --&gt;
+![<span class="hljs-string">Flowchart showing the build pipeline from content to dist folder</span>](<span class="hljs-link">/images/build-flow.png</span>)
+
+&lt;!-- Bad: unhelpful alt text --&gt;
+![<span class="hljs-string">Image</span>](<span class="hljs-link">/images/build-flow.png</span>)
+![](<span class="hljs-link">/images/build-flow.png</span>)
+</code></pre>
+<p>If an image is purely decorative and adds no information, you can use empty alt text:</p>
+<pre class="hljs" data-language="markdown"><code>![](<span class="hljs-link">/images/decorative-divider.png</span>)
+</code></pre>
+<p>However, documentation images almost always convey information and need meaningful alt text.</p>
+<h3 id="writing-good-alt-text" tabindex="-1"><a class="heading-anchor" href="#writing-good-alt-text" aria-hidden="true">#</a> Writing Good Alt Text</h3>
+<table>
+<thead>
+<tr>
+<th>Image Type</th>
+<th>Alt Text Approach</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Screenshot</td>
+<td>Describe what the interface shows and any highlighted elements</td>
+</tr>
+<tr>
+<td>Diagram</td>
+<td>Summarize the relationships or flow depicted</td>
+</tr>
+<tr>
+<td>Graph/Chart</td>
+<td>Describe the data and any key insights</td>
+</tr>
+<tr>
+<td>Icon</td>
+<td>Describe the icon’s meaning in context</td>
+</tr>
+</tbody>
+</table>
+<p>Examples:</p>
+<pre class="hljs" data-language="markdown"><code>![<span class="hljs-string">MarkStack homepage showing the search bar and navigation sidebar</span>](<span class="hljs-link">/images/homepage.png</span>)
+
+![<span class="hljs-string">Diagram of request flow: client sends request to API, API queries database, database returns data</span>](<span class="hljs-link">/images/request-flow.svg</span>)
+
+![<span class="hljs-string">Bar chart showing build times: MarkStack at 89ms, Tool B at 2400ms, Tool C at 5600ms</span>](<span class="hljs-link">/images/performance-comparison.png</span>)
+</code></pre>
+<h3 id="descriptive-link-text" tabindex="-1"><a class="heading-anchor" href="#descriptive-link-text" aria-hidden="true">#</a> Descriptive Link Text</h3>
+<p>Link text should describe where the link goes:</p>
+<pre class="hljs" data-language="markdown"><code>&lt;!-- Good: describes the destination --&gt;
+Read the [<span class="hljs-string">installation guide</span>](<span class="hljs-link">/installation/</span>) for setup instructions.
+
+Download the [<span class="hljs-string">complete API reference (PDF)</span>](<span class="hljs-link">/files/api-reference.pdf</span>).
+
+&lt;!-- Bad: generic link text --&gt;
+Click [<span class="hljs-string">here</span>](<span class="hljs-link">/installation/</span>) for installation.
+
+[<span class="hljs-string">Download</span>](<span class="hljs-link">/files/api-reference.pdf</span>) the reference.
+</code></pre>
+<p>Screen reader users often navigate by links, hearing just the link text without surrounding context. “Click here” and “download” do not tell them where the link leads.</p>
+<h3 id="link-purpose-from-context" tabindex="-1"><a class="heading-anchor" href="#link-purpose-from-context" aria-hidden="true">#</a> Link Purpose from Context</h3>
+<p>If context makes the destination clear, shorter link text works:</p>
+<pre class="hljs" data-language="markdown"><code>For setup help, see [<span class="hljs-string">Installation</span>](<span class="hljs-link">/installation/</span>).
+</code></pre>
+<h2 id="practical-examples" tabindex="-1"><a class="heading-anchor" href="#practical-examples" aria-hidden="true">#</a> Practical Examples</h2>
+<h3 id="documentation-page-with-multiple-assets" tabindex="-1"><a class="heading-anchor" href="#documentation-page-with-multiple-assets" aria-hidden="true">#</a> Documentation Page with Multiple Assets</h3>
+<pre class="hljs" data-language="markdown"><code>---
+title: Dashboard Overview
+<span class="hljs-section">description: Learn to navigate and customize the dashboard interface.
+---</span>
+
+<span class="hljs-section"># Dashboard Overview</span>
+
+The dashboard is your central hub for monitoring system status.
+
+![<span class="hljs-string">Dashboard main view showing navigation and status panels</span>](<span class="hljs-link">/images/dashboard-main.png</span>)
+
+<span class="hljs-section">## Navigation</span>
+
+The left sidebar provides access to all major sections:
+
+![<span class="hljs-string">Sidebar navigation highlighting the main menu items</span>](<span class="hljs-link">/images/dashboard-sidebar.png</span>)
+
+<span class="hljs-section">## Customization</span>
+
+Download our [<span class="hljs-string">dashboard configuration template</span>](<span class="hljs-link">/files/dashboard-config.yaml</span>) to get started with customization.
+
+For detailed customization options, see the [<span class="hljs-string">Configuration Guide</span>](<span class="hljs-link">/configuration/</span>).
+
+<span class="hljs-quote">&gt; [!TIP]</span>
+<span class="hljs-quote">&gt; Press `Ctrl+K` anywhere in the dashboard to open the quick search.</span>
+</code></pre>
+<h3 id="linking-related-content" tabindex="-1"><a class="heading-anchor" href="#linking-related-content" aria-hidden="true">#</a> Linking Related Content</h3>
+<pre class="hljs" data-language="markdown"><code><span class="hljs-section">## Learn More</span>
+
+<span class="hljs-bullet">-</span> [<span class="hljs-string">Getting Started</span>](<span class="hljs-link">/getting-started/</span>) provides initial setup instructions
+<span class="hljs-bullet">-</span> [<span class="hljs-string">Markdown Features</span>](<span class="hljs-link">/authoring/markdown-features/</span>) covers all formatting options
+<span class="hljs-bullet">-</span> [<span class="hljs-string">Highlight.js</span>](<span class="hljs-link">https://highlightjs.org</span>) powers the syntax highlighting
+
+For printable reference material:
+
+<span class="hljs-bullet">-</span> [<span class="hljs-string">Quick Reference Card (PDF)</span>](<span class="hljs-link">/files/quick-reference.pdf</span>)
+<span class="hljs-bullet">-</span> [<span class="hljs-string">Full Documentation (PDF)</span>](<span class="hljs-link">/files/complete-docs.pdf</span>)
+</code></pre>
+<blockquote class="alert alert-tip">
+<p><span class="alert-title"><span class="alert-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"/></svg></span>TIP</span>
+After adding new files to <code>static/</code>, run <code>npm run build</code> (or let <code>npm run watch</code> rebuild) so they copy to <code>dist/</code> and become accessible.</p>
+</blockquote>
+
+      </article>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <p>Built with <a href="https://github.com/KineticEnforcer/MarkStack" target="_blank" rel="noopener noreferrer">MarkStack</a></p>
+      <p class="copyright">© 2026 KineticEnforcer. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="/markstackdemo/js/app.js"></script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Apply theme immediately to prevent flash of unstyled content (FOUC)
+    (function() {
+      const theme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script>
+    // Apply sidebar state immediately to prevent layout shift
+    (function() {
+      const savedState = localStorage.getItem('sidebar-state');
+      if (savedState === 'collapsed') {
+        document.documentElement.classList.add('sidebar-collapsed');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Complete guide to YAML frontmatter in MarkStack, including available fields, best practices for titles and descriptions, and how frontmatter affects navigation, search, and SEO.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta property="og:title" content="Frontmatter | MarkStack">
+  <meta property="og:description" content="Complete guide to YAML frontmatter in MarkStack, including available fields, best practices for titles and descriptions, and how frontmatter affects navigation, search, and SEO.">
+  <meta property="og:url" content="https://kineticenforcer.github.io/markstackdemo/authoring-content/frontmatter">
+  <meta property="og:type" content="website">
+  <title>Frontmatter | MarkStack</title>
+  <link rel="stylesheet" href="/markstackdemo/css/main.css">
+  <link rel="stylesheet" href="/markstackdemo/css/hljs-theme.css">
+  <link rel="icon" href="/markstackdemo/svg/logo.svg" type="image/svg+xml">
+</head>
+<body data-baseurl="/markstackdemo">
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/markstackdemo/" class="site-logo">
+        <img src="/markstackdemo/svg/logo.svg" alt="Logo" class="logo-icon" width="32" height="32">
+        <span class="logo-text">MarkStack</span>
+      </a>
+      
+      <div class="header-search">
+        <div class="search-container">
+          <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search documentation..." autocomplete="off">
+          <kbd class="search-shortcut">Ctrl+K</kbd>
+        </div>
+        <div id="search-results" class="search-results"></div>
+      </div>
+      
+      <div class="header-actions">
+        <a href="https://github.com/KineticEnforcer/MarkStack" target="_blank" rel="noopener noreferrer" class="github-link" aria-label="View on GitHub">
+          <svg class="github-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+        </a>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="breadcrumb-bar">
+    <div class="breadcrumb-container">
+      <a href="/markstackdemo/" class="breadcrumb-home" title="Home"><svg class="breadcrumb-home-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V9.5a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v4.5h2.25a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z"/></svg></a><span class="breadcrumb-separator">/</span><a href="/markstackdemo/authoring-content/">Authoring Content</a><span class="breadcrumb-separator">/</span><span class="breadcrumb-current">Frontmatter</span>
+    </div>
+  </div>
+
+  <button class="sidebar-collapse-toggle" id="sidebar-toggle" title="Toggle sidebar">
+    <svg class="sidebar-toggle-icon collapse-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+      <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/>
+    </svg>
+    <svg class="sidebar-toggle-icon expand-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+      <path d="M8.22 3.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.53a.75.75 0 0 1 0-1.06Z"/>
+    </svg>
+  </button>
+
+  <div class="main-layout">
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <ul class="sidebar-list sidebar-level-0">
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/architecture/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Architecture</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/build-pipeline"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Build Pipeline</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/navigation-and-routing"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Navigation and Routing</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/search-indexing"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Search Indexing</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder sidebar-expanded" data-state="expanded"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"/></svg></button><a href="/markstackdemo/authoring-content/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Authoring Content</a></div><div class="sidebar-children expanded"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/content-model"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Content Model</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/examples"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Examples</a></li>
+<li class="sidebar-item sidebar-file sidebar-current"><a href="/markstackdemo/authoring-content/frontmatter"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Frontmatter</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/markdown-features"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Markdown Features</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/media-and-links"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Media and Links</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/build-and-deploy/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Build and Deploy</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/cicd-integration"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>CI/CD Integration</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/commands-reference"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Commands Reference</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/deployment-guide"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Deployment Guide</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/configuration/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Configuration</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/configuration/homepage-content"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Homepage Content</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/configuration/site-config"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Site Config</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/customization/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Customization</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/customization/templates"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Templates</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/customization/themes-and-styling"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Themes and Styling</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/getting-started/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Getting Started</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/installation"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Installation</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/project-structure"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Project Structure</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/quickstart"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Quickstart</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/troubleshooting/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Troubleshooting</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/troubleshooting/common-issues"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Common Issues</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/troubleshooting/frequently-asked-questions"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Frequently Asked Questions</a></li>
+</ul></div></li>
+</ul>
+      </nav>
+    </aside>
+    
+    <main class="content">
+      <article class="article">
+        <h1 id="frontmatter" tabindex="-1"><a class="heading-anchor" href="#frontmatter" aria-hidden="true">#</a> Frontmatter</h1>
+<p>Frontmatter is metadata written in YAML format at the very beginning of each markdown file. It tells MarkStack how to title the page, what description to use in search results and meta tags, and provides other information that affects how the page appears on your site.</p>
+<p>This guide explains all available frontmatter fields, how to write effective values, and best practices for different types of pages.</p>
+<h2 id="what-frontmatter-looks-like" tabindex="-1"><a class="heading-anchor" href="#what-frontmatter-looks-like" aria-hidden="true">#</a> What Frontmatter Looks Like</h2>
+<p>Frontmatter appears at the top of a markdown file, wrapped in triple dashes:</p>
+<pre class="hljs" data-language="markdown"><code>---
+title: Getting Started
+<span class="hljs-section">description: Learn how to install, configure, and run your first build.
+---</span>
+
+<span class="hljs-section"># Getting Started</span>
+
+The rest of your content goes here...
+</code></pre>
+<p>The triple dashes (<code>---</code>) mark where the frontmatter begins and ends. Everything between them is YAML, a simple format for key-value pairs. Everything after the closing dashes is your markdown content.</p>
+<h2 id="available-fields" tabindex="-1"><a class="heading-anchor" href="#available-fields" aria-hidden="true">#</a> Available Fields</h2>
+<p>MarkStack currently supports two frontmatter fields:</p>
+<h3 id="title" tabindex="-1"><a class="heading-anchor" href="#title" aria-hidden="true">#</a> title</h3>
+<p>The <code>title</code> field sets the page title. This value appears in:</p>
+<ul>
+<li>The browser tab/window title</li>
+<li>The sidebar navigation label</li>
+<li>The breadcrumb trail</li>
+<li>The page’s HTML <code>&lt;title&gt;</code> tag</li>
+<li>Open Graph meta tags for social sharing</li>
+</ul>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-meta">---</span>
+<span class="hljs-attr">title:</span> <span class="hljs-string">Installation</span> <span class="hljs-string">Guide</span>
+<span class="hljs-meta">---
+</span></code></pre>
+<p><strong>When to use:</strong> Always set a title for important pages. It gives you control over exactly how the page appears in navigation and search results.</p>
+<p><strong>When it is optional:</strong> If you omit the title, MarkStack derives one from the filename:</p>
+<table>
+<thead>
+<tr>
+<th>Filename</th>
+<th>Derived Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>installation.md</code></td>
+<td>Installation</td>
+</tr>
+<tr>
+<td><code>quick-start.md</code></td>
+<td>Quick Start</td>
+</tr>
+<tr>
+<td><code>api-reference.md</code></td>
+<td>Api Reference</td>
+</tr>
+</tbody>
+</table>
+<p>The derived title applies basic formatting (replacing hyphens with spaces, capitalizing first letters), but it may not be exactly what you want. For example, “<a href="http://api-reference.md">api-reference.md</a>” becomes “Api Reference” rather than “API Reference.”</p>
+<h3 id="description" tabindex="-1"><a class="heading-anchor" href="#description" aria-hidden="true">#</a> description</h3>
+<p>The <code>description</code> field provides a short summary of what the page covers. This value appears in:</p>
+<ul>
+<li>The HTML <code>&lt;meta name=&quot;description&quot;&gt;</code> tag (important for SEO)</li>
+<li>Search result snippets in the MarkStack search box</li>
+<li>Open Graph meta tags when the page is shared on social media</li>
+</ul>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-meta">---</span>
+<span class="hljs-attr">title:</span> <span class="hljs-string">Installation</span> <span class="hljs-string">Guide</span>
+<span class="hljs-attr">description:</span> <span class="hljs-string">Step-by-step</span> <span class="hljs-string">instructions</span> <span class="hljs-string">for</span> <span class="hljs-string">installing</span> <span class="hljs-string">the</span> <span class="hljs-string">software</span> <span class="hljs-string">on</span> <span class="hljs-string">Windows,</span> <span class="hljs-string">macOS,</span> <span class="hljs-string">and</span> <span class="hljs-string">Linux,</span> <span class="hljs-string">including</span> <span class="hljs-string">prerequisites</span> <span class="hljs-string">and</span> <span class="hljs-string">troubleshooting</span> <span class="hljs-string">tips.</span>
+<span class="hljs-meta">---
+</span></code></pre>
+<p><strong>When to use:</strong> Add descriptions to every page you want to be discoverable in search engines. The description helps users decide whether a search result is relevant to their needs.</p>
+<p><strong>When it is optional:</strong> If you omit the description, MarkStack uses the <code>defaultDescription</code> from <code>siteconfig.json</code>. This fallback works for pages you do not expect search engines to surface prominently, but it means all those pages show the same generic description in search results.</p>
+<h2 id="frontmatter-for-categories" tabindex="-1"><a class="heading-anchor" href="#frontmatter-for-categories" aria-hidden="true">#</a> Frontmatter for Categories</h2>
+<p>Category landing pages (<code>_index.md</code> files) use the same frontmatter fields, but they apply to the entire category:</p>
+<pre class="hljs" data-language="markdown"><code>---
+title: Guides
+<span class="hljs-section">description: Step-by-step tutorials that walk you through common tasks from start to finish.
+---</span>
+
+<span class="hljs-section"># Guides</span>
+
+Welcome to the guides section...
+</code></pre>
+<p>The <code>title</code> becomes the sidebar label for the category folder. The <code>description</code> appears in the category landing page’s meta tags.</p>
+<p>Without frontmatter, the category title comes from the folder name. A folder named <code>getting-started/</code> without an <code>_index.md</code> (or with an <code>_index.md</code> missing the title) appears in navigation as “Getting Started.”</p>
+<h2 id="writing-effective-titles" tabindex="-1"><a class="heading-anchor" href="#writing-effective-titles" aria-hidden="true">#</a> Writing Effective Titles</h2>
+<p>Good titles help readers find information quickly and understand what a page covers. Follow these guidelines:</p>
+<h3 id="be-specific" tabindex="-1"><a class="heading-anchor" href="#be-specific" aria-hidden="true">#</a> Be Specific</h3>
+<p>Vague titles make navigation harder. Compare:</p>
+<table>
+<thead>
+<tr>
+<th>Less Effective</th>
+<th>More Effective</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Setup</td>
+<td>Installation on Windows</td>
+</tr>
+<tr>
+<td>Guide</td>
+<td>Complete API Authentication Guide</td>
+</tr>
+<tr>
+<td>Config</td>
+<td>Configuration File Reference</td>
+</tr>
+</tbody>
+</table>
+<h3 id="keep-titles-concise" tabindex="-1"><a class="heading-anchor" href="#keep-titles-concise" aria-hidden="true">#</a> Keep Titles Concise</h3>
+<p>Long titles clutter the sidebar and get truncated in browser tabs. Aim for 3 to 5 words when possible:</p>
+<table>
+<thead>
+<tr>
+<th>Too Long</th>
+<th>Better</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A Complete Guide to Installing and Configuring the Software on Your Machine</td>
+<td>Installation Guide</td>
+</tr>
+<tr>
+<td>Everything You Need to Know About the Configuration File</td>
+<td>Configuration Reference</td>
+</tr>
+</tbody>
+</table>
+<h3 id="use-consistent-patterns" tabindex="-1"><a class="heading-anchor" href="#use-consistent-patterns" aria-hidden="true">#</a> Use Consistent Patterns</h3>
+<p>Pick a capitalization style and stick with it throughout your documentation:</p>
+<ul>
+<li><strong>Title Case</strong>: Installation Guide, API Reference, Getting Started</li>
+<li><strong>Sentence case</strong>: Installation guide, API reference, Getting started</li>
+</ul>
+<p>Most documentation uses title case for navigation items.</p>
+<h3 id="remember-that-titles-become-urls" tabindex="-1"><a class="heading-anchor" href="#remember-that-titles-become-urls" aria-hidden="true">#</a> Remember That Titles Become URLs</h3>
+<p>Since titles slugify into URLs, consider how the slug will look:</p>
+<table>
+<thead>
+<tr>
+<th>Title</th>
+<th>Resulting URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Getting Started</td>
+<td><code>/getting-started/</code></td>
+</tr>
+<tr>
+<td>C++ Programming Guide</td>
+<td><code>/c-programming-guide/</code></td>
+</tr>
+<tr>
+<td>The “Ultimate” Reference</td>
+<td><code>/the-ultimate-reference/</code></td>
+</tr>
+</tbody>
+</table>
+<p>Titles with special characters may produce less readable URLs. “C++ Programming Guide” loses the plus signs and becomes <code>c-programming-guide</code>.</p>
+<h2 id="writing-effective-descriptions" tabindex="-1"><a class="heading-anchor" href="#writing-effective-descriptions" aria-hidden="true">#</a> Writing Effective Descriptions</h2>
+<p>Descriptions serve readers and search engines. A good description:</p>
+<ol>
+<li>Summarizes the page content accurately</li>
+<li>Helps readers decide if this page answers their question</li>
+<li>Uses natural language (not just keywords)</li>
+<li>Fits in the space search engines display (about 150 to 160 characters)</li>
+</ol>
+<h3 id="examples" tabindex="-1"><a class="heading-anchor" href="#examples" aria-hidden="true">#</a> Examples</h3>
+<p><strong>Good description:</strong></p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">description:</span> <span class="hljs-string">Learn</span> <span class="hljs-string">how</span> <span class="hljs-string">to</span> <span class="hljs-string">install</span> <span class="hljs-string">MarkStack</span> <span class="hljs-string">on</span> <span class="hljs-string">Windows,</span> <span class="hljs-string">macOS,</span> <span class="hljs-string">and</span> <span class="hljs-string">Linux</span> <span class="hljs-string">with</span> <span class="hljs-string">step-by-step</span> <span class="hljs-string">instructions</span> <span class="hljs-string">and</span> <span class="hljs-string">troubleshooting</span> <span class="hljs-string">tips</span> <span class="hljs-string">for</span> <span class="hljs-string">common</span> <span class="hljs-string">issues.</span>
+</code></pre>
+<p>This description tells readers exactly what they will find and includes relevant terms naturally.</p>
+<p><strong>Less effective description:</strong></p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">description:</span> <span class="hljs-string">Installation.</span> <span class="hljs-string">Setup.</span> <span class="hljs-string">Configuration.</span> <span class="hljs-string">Download.</span> <span class="hljs-string">Install</span> <span class="hljs-string">software.</span> <span class="hljs-string">Getting</span> <span class="hljs-string">started</span> <span class="hljs-string">guide.</span>
+</code></pre>
+<p>This reads like a keyword list, not helpful information.</p>
+<h3 id="description-length" tabindex="-1"><a class="heading-anchor" href="#description-length" aria-hidden="true">#</a> Description Length</h3>
+<p>Search engines typically display 150 to 160 characters of the description. Longer descriptions get truncated with an ellipsis (…).</p>
+<p>Check your description length:</p>
+<ul>
+<li>Under 150 characters: Safe, will display fully</li>
+<li>150 to 160 characters: Usually displays fully</li>
+<li>Over 160 characters: Will be truncated</li>
+</ul>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-comment"># This description is about 140 characters:</span>
+<span class="hljs-attr">description:</span> <span class="hljs-string">Install</span> <span class="hljs-string">MarkStack</span> <span class="hljs-string">in</span> <span class="hljs-string">minutes</span> <span class="hljs-string">with</span> <span class="hljs-string">our</span> <span class="hljs-string">step-by-step</span> <span class="hljs-string">guide.</span> <span class="hljs-string">Covers</span> <span class="hljs-string">Windows,</span> <span class="hljs-string">macOS,</span> <span class="hljs-string">and</span> <span class="hljs-string">Linux</span> <span class="hljs-string">with</span> <span class="hljs-string">troubleshooting</span> <span class="hljs-string">tips.</span>
+</code></pre>
+<h3 id="when-pages-share-descriptions" tabindex="-1"><a class="heading-anchor" href="#when-pages-share-descriptions" aria-hidden="true">#</a> When Pages Share Descriptions</h3>
+<p>If you omit descriptions from multiple pages, they all inherit <code>defaultDescription</code> from <code>siteconfig.json</code>. This makes search results less helpful because every page shows the same snippet.</p>
+<p>Prioritize adding unique descriptions to:</p>
+<ul>
+<li>Landing pages (homepage, category indexes)</li>
+<li>Frequently accessed pages</li>
+<li>Pages you want search engines to rank</li>
+</ul>
+<h2 id="complete-examples" tabindex="-1"><a class="heading-anchor" href="#complete-examples" aria-hidden="true">#</a> Complete Examples</h2>
+<h3 id="documentation-page" tabindex="-1"><a class="heading-anchor" href="#documentation-page" aria-hidden="true">#</a> Documentation Page</h3>
+<pre class="hljs" data-language="markdown"><code>---
+title: API Authentication
+<span class="hljs-section">description: Configure API keys and OAuth tokens to authenticate requests. Includes examples for all supported authentication methods.
+---</span>
+
+<span class="hljs-section"># API Authentication</span>
+
+This guide explains how to authenticate API requests using API keys, OAuth 2.0 tokens, or service accounts.
+
+<span class="hljs-section">## API Keys</span>
+
+Generate an API key from your dashboard...
+</code></pre>
+<h3 id="category-landing-page" tabindex="-1"><a class="heading-anchor" href="#category-landing-page" aria-hidden="true">#</a> Category Landing Page</h3>
+<pre class="hljs" data-language="markdown"><code>---
+title: Developer Guides
+<span class="hljs-section">description: In-depth guides for developers integrating with our platform. Covers authentication, webhooks, SDKs, and best practices.
+---</span>
+
+<span class="hljs-section"># Developer Guides</span>
+
+These guides help developers build integrations with our platform.
+
+<span class="hljs-section">## Where to Start</span>
+
+New developers should begin with the [<span class="hljs-string">Quick Start</span>](<span class="hljs-link">/guides/quick-start/</span>) tutorial...
+</code></pre>
+<h3 id="minimal-page" tabindex="-1"><a class="heading-anchor" href="#minimal-page" aria-hidden="true">#</a> Minimal Page</h3>
+<p>For less important pages, you can use minimal frontmatter:</p>
+<pre class="hljs" data-language="markdown"><code>---
+<span class="hljs-section">title: Changelog
+---</span>
+
+<span class="hljs-section"># Changelog</span>
+
+<span class="hljs-section">## Version 2.1.0</span>
+
+Released December 15, 2024...
+</code></pre>
+<p>This page uses the title from frontmatter and inherits the site’s default description.</p>
+<h2 id="frontmatter-best-practices" tabindex="-1"><a class="heading-anchor" href="#frontmatter-best-practices" aria-hidden="true">#</a> Frontmatter Best Practices</h2>
+<table>
+<thead>
+<tr>
+<th>Practice</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Always set <code>title</code></td>
+<td>Gives you control over navigation and URLs</td>
+</tr>
+<tr>
+<td>Add <code>description</code> to important pages</td>
+<td>Improves search results and SEO</td>
+</tr>
+<tr>
+<td>Keep titles stable</td>
+<td>Changing titles changes URLs, breaking links</td>
+</tr>
+<tr>
+<td>Use natural language in descriptions</td>
+<td>Helps readers, not just search engines</td>
+</tr>
+<tr>
+<td>Review descriptions for length</td>
+<td>Keep under 160 characters to avoid truncation</td>
+</tr>
+</tbody>
+</table>
+<h2 id="what-happens-after-changes" tabindex="-1"><a class="heading-anchor" href="#what-happens-after-changes" aria-hidden="true">#</a> What Happens After Changes</h2>
+<p>After modifying frontmatter, run <code>npm run build</code> (or let <code>npm run watch</code> rebuild automatically). The build process:</p>
+<ol>
+<li>Reads the new frontmatter values</li>
+<li>Regenerates the URL if the title changed</li>
+<li>Updates meta tags in the HTML output</li>
+<li>Rebuilds the search index with new titles and descriptions</li>
+<li>Updates navigation labels in the sidebar</li>
+</ol>
+<blockquote class="alert alert-warning">
+<p><span class="alert-title"><span class="alert-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg></span>WARNING</span>
+Changing a page’s title changes its URL. If the page is already published and linked from external sites, those links will break. Either keep titles stable after publishing, or add redirects at your hosting provider when you must change them.</p>
+</blockquote>
+<blockquote class="alert alert-tip">
+<p><span class="alert-title"><span class="alert-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"/></svg></span>TIP</span>
+When creating new content, set the title and description in frontmatter before writing the content. This helps you stay focused on what the page should cover.</p>
+</blockquote>
+
+      </article>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <p>Built with <a href="https://github.com/KineticEnforcer/MarkStack" target="_blank" rel="noopener noreferrer">MarkStack</a></p>
+      <p class="copyright">© 2026 KineticEnforcer. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="/markstackdemo/js/app.js"></script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+    });
+  </script>
+</body>
+</html>

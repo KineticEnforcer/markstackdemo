@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Apply theme immediately to prevent flash of unstyled content (FOUC)
+    (function() {
+      const theme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script>
+    // Apply sidebar state immediately to prevent layout shift
+    (function() {
+      const savedState = localStorage.getItem('sidebar-state');
+      if (savedState === 'collapsed') {
+        document.documentElement.classList.add('sidebar-collapsed');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Set up automated builds and deployments for your MarkStack site using GitHub Actions, GitLab CI, and other continuous integration systems.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta property="og:title" content="CI/CD Integration | MarkStack">
+  <meta property="og:description" content="Set up automated builds and deployments for your MarkStack site using GitHub Actions, GitLab CI, and other continuous integration systems.">
+  <meta property="og:url" content="https://kineticenforcer.github.io/markstackdemo/build-and-deploy/cicd-integration">
+  <meta property="og:type" content="website">
+  <title>CI/CD Integration | MarkStack</title>
+  <link rel="stylesheet" href="/markstackdemo/css/main.css">
+  <link rel="stylesheet" href="/markstackdemo/css/hljs-theme.css">
+  <link rel="icon" href="/markstackdemo/svg/logo.svg" type="image/svg+xml">
+</head>
+<body data-baseurl="/markstackdemo">
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/markstackdemo/" class="site-logo">
+        <img src="/markstackdemo/svg/logo.svg" alt="Logo" class="logo-icon" width="32" height="32">
+        <span class="logo-text">MarkStack</span>
+      </a>
+      
+      <div class="header-search">
+        <div class="search-container">
+          <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search documentation..." autocomplete="off">
+          <kbd class="search-shortcut">Ctrl+K</kbd>
+        </div>
+        <div id="search-results" class="search-results"></div>
+      </div>
+      
+      <div class="header-actions">
+        <a href="https://github.com/KineticEnforcer/MarkStack" target="_blank" rel="noopener noreferrer" class="github-link" aria-label="View on GitHub">
+          <svg class="github-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+        </a>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="breadcrumb-bar">
+    <div class="breadcrumb-container">
+      <a href="/markstackdemo/" class="breadcrumb-home" title="Home"><svg class="breadcrumb-home-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V9.5a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v4.5h2.25a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z"/></svg></a><span class="breadcrumb-separator">/</span><a href="/markstackdemo/build-and-deploy/">Build and Deploy</a><span class="breadcrumb-separator">/</span><span class="breadcrumb-current">CI/CD Integration</span>
+    </div>
+  </div>
+
+  <button class="sidebar-collapse-toggle" id="sidebar-toggle" title="Toggle sidebar">
+    <svg class="sidebar-toggle-icon collapse-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+      <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/>
+    </svg>
+    <svg class="sidebar-toggle-icon expand-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+      <path d="M8.22 3.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.53a.75.75 0 0 1 0-1.06Z"/>
+    </svg>
+  </button>
+
+  <div class="main-layout">
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <ul class="sidebar-list sidebar-level-0">
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/architecture/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Architecture</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/build-pipeline"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Build Pipeline</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/navigation-and-routing"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Navigation and Routing</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/search-indexing"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Search Indexing</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/authoring-content/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Authoring Content</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/content-model"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Content Model</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/examples"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Examples</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/frontmatter"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Frontmatter</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/markdown-features"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Markdown Features</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/media-and-links"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Media and Links</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder sidebar-expanded" data-state="expanded"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"/></svg></button><a href="/markstackdemo/build-and-deploy/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Build and Deploy</a></div><div class="sidebar-children expanded"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file sidebar-current"><a href="/markstackdemo/build-and-deploy/cicd-integration"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>CI/CD Integration</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/commands-reference"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Commands Reference</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/deployment-guide"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Deployment Guide</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/configuration/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Configuration</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/configuration/homepage-content"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Homepage Content</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/configuration/site-config"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Site Config</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/customization/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Customization</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/customization/templates"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Templates</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/customization/themes-and-styling"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Themes and Styling</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/getting-started/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Getting Started</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/installation"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Installation</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/project-structure"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Project Structure</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/quickstart"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Quickstart</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/troubleshooting/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Troubleshooting</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/troubleshooting/common-issues"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Common Issues</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/troubleshooting/frequently-asked-questions"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Frequently Asked Questions</a></li>
+</ul></div></li>
+</ul>
+      </nav>
+    </aside>
+    
+    <main class="content">
+      <article class="article">
+        <h1 id="ci-cd-integration" tabindex="-1"><a class="heading-anchor" href="#ci-cd-integration" aria-hidden="true">#</a> CI/CD Integration</h1>
+<p>Continuous Integration and Continuous Deployment (CI/CD) automates building and deploying your MarkStack site whenever you push changes. This guide covers setting up automated pipelines for popular platforms.</p>
+<h2 id="benefits-of-ci-cd" tabindex="-1"><a class="heading-anchor" href="#benefits-of-ci-cd" aria-hidden="true">#</a> Benefits of CI/CD</h2>
+<p>Automated deployments provide several advantages:</p>
+<ul>
+<li><strong>Consistency</strong>: Every build uses the same environment and steps</li>
+<li><strong>Speed</strong>: Deploy seconds after pushing, no manual steps</li>
+<li><strong>Reliability</strong>: Catch build errors before they reach production</li>
+<li><strong>Collaboration</strong>: Team members can contribute without deployment access</li>
+<li><strong>Audit trail</strong>: Git history shows what was deployed and when</li>
+</ul>
+<h2 id="github-actions" tabindex="-1"><a class="heading-anchor" href="#github-actions" aria-hidden="true">#</a> GitHub Actions</h2>
+<p>GitHub Actions is integrated directly into GitHub and requires no additional services.</p>
+<h3 id="basic-deployment-workflow" tabindex="-1"><a class="heading-anchor" href="#basic-deployment-workflow" aria-hidden="true">#</a> Basic Deployment Workflow</h3>
+<p>Create <code>.github/workflows/deploy.yml</code>:</p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">name:</span> <span class="hljs-string">Build</span> <span class="hljs-string">and</span> <span class="hljs-string">Deploy</span>
+
+<span class="hljs-attr">on:</span>
+  <span class="hljs-attr">push:</span>
+    <span class="hljs-attr">branches:</span> [<span class="hljs-string">main</span>]
+  <span class="hljs-attr">pull_request:</span>
+    <span class="hljs-attr">branches:</span> [<span class="hljs-string">main</span>]
+  <span class="hljs-attr">workflow_dispatch:</span>
+
+<span class="hljs-attr">jobs:</span>
+  <span class="hljs-attr">build:</span>
+    <span class="hljs-attr">runs-on:</span> <span class="hljs-string">ubuntu-latest</span>
+    
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Checkout</span> <span class="hljs-string">repository</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/checkout@v4</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Setup</span> <span class="hljs-string">Node.js</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/setup-node@v4</span>
+        <span class="hljs-attr">with:</span>
+          <span class="hljs-attr">node-version:</span> <span class="hljs-string">&#x27;20&#x27;</span>
+          <span class="hljs-attr">cache:</span> <span class="hljs-string">&#x27;npm&#x27;</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Install</span> <span class="hljs-string">dependencies</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Build</span> <span class="hljs-string">site</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">run</span> <span class="hljs-string">build</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Upload</span> <span class="hljs-string">build</span> <span class="hljs-string">artifact</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/upload-artifact@v4</span>
+        <span class="hljs-attr">with:</span>
+          <span class="hljs-attr">name:</span> <span class="hljs-string">dist</span>
+          <span class="hljs-attr">path:</span> <span class="hljs-string">dist/</span>
+          <span class="hljs-attr">retention-days:</span> <span class="hljs-number">7</span>
+</code></pre>
+<p>This workflow:</p>
+<ul>
+<li>Runs on every push to main</li>
+<li>Runs on pull requests (for testing)</li>
+<li>Can be triggered manually</li>
+<li>Caches npm dependencies for faster builds</li>
+<li>Uploads the built site as an artifact</li>
+</ul>
+<h3 id="deploy-to-github-pages" tabindex="-1"><a class="heading-anchor" href="#deploy-to-github-pages" aria-hidden="true">#</a> Deploy to GitHub Pages</h3>
+<p>For GitHub Pages deployment, use this workflow:</p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">name:</span> <span class="hljs-string">Deploy</span> <span class="hljs-string">to</span> <span class="hljs-string">GitHub</span> <span class="hljs-string">Pages</span>
+
+<span class="hljs-attr">on:</span>
+  <span class="hljs-attr">push:</span>
+    <span class="hljs-attr">branches:</span> [<span class="hljs-string">main</span>]
+  <span class="hljs-attr">workflow_dispatch:</span>
+
+<span class="hljs-attr">permissions:</span>
+  <span class="hljs-attr">contents:</span> <span class="hljs-string">read</span>
+  <span class="hljs-attr">pages:</span> <span class="hljs-string">write</span>
+  <span class="hljs-attr">id-token:</span> <span class="hljs-string">write</span>
+
+<span class="hljs-attr">concurrency:</span>
+  <span class="hljs-attr">group:</span> <span class="hljs-string">&quot;pages&quot;</span>
+  <span class="hljs-attr">cancel-in-progress:</span> <span class="hljs-literal">true</span>
+
+<span class="hljs-attr">jobs:</span>
+  <span class="hljs-attr">build:</span>
+    <span class="hljs-attr">runs-on:</span> <span class="hljs-string">ubuntu-latest</span>
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Checkout</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/checkout@v4</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Setup</span> <span class="hljs-string">Node.js</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/setup-node@v4</span>
+        <span class="hljs-attr">with:</span>
+          <span class="hljs-attr">node-version:</span> <span class="hljs-string">&#x27;20&#x27;</span>
+          <span class="hljs-attr">cache:</span> <span class="hljs-string">&#x27;npm&#x27;</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Install</span> <span class="hljs-string">dependencies</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Build</span> <span class="hljs-string">site</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">run</span> <span class="hljs-string">build</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Configure</span> <span class="hljs-string">Pages</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/configure-pages@v4</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Upload</span> <span class="hljs-string">Pages</span> <span class="hljs-string">artifact</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/upload-pages-artifact@v3</span>
+        <span class="hljs-attr">with:</span>
+          <span class="hljs-attr">path:</span> <span class="hljs-string">./dist</span>
+
+  <span class="hljs-attr">deploy:</span>
+    <span class="hljs-attr">needs:</span> <span class="hljs-string">build</span>
+    <span class="hljs-attr">runs-on:</span> <span class="hljs-string">ubuntu-latest</span>
+    <span class="hljs-attr">environment:</span>
+      <span class="hljs-attr">name:</span> <span class="hljs-string">github-pages</span>
+      <span class="hljs-attr">url:</span> <span class="hljs-string">${{</span> <span class="hljs-string">steps.deployment.outputs.page_url</span> <span class="hljs-string">}}</span>
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Deploy</span> <span class="hljs-string">to</span> <span class="hljs-string">GitHub</span> <span class="hljs-string">Pages</span>
+        <span class="hljs-attr">id:</span> <span class="hljs-string">deployment</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/deploy-pages@v4</span>
+</code></pre>
+<p>After adding this workflow:</p>
+<ol>
+<li>Go to repository Settings</li>
+<li>Navigate to Pages</li>
+<li>Under “Build and deployment”, select “GitHub Actions”</li>
+</ol>
+<h3 id="deploy-to-netlify" tabindex="-1"><a class="heading-anchor" href="#deploy-to-netlify" aria-hidden="true">#</a> Deploy to Netlify</h3>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">name:</span> <span class="hljs-string">Deploy</span> <span class="hljs-string">to</span> <span class="hljs-string">Netlify</span>
+
+<span class="hljs-attr">on:</span>
+  <span class="hljs-attr">push:</span>
+    <span class="hljs-attr">branches:</span> [<span class="hljs-string">main</span>]
+
+<span class="hljs-attr">jobs:</span>
+  <span class="hljs-attr">deploy:</span>
+    <span class="hljs-attr">runs-on:</span> <span class="hljs-string">ubuntu-latest</span>
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Checkout</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/checkout@v4</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Setup</span> <span class="hljs-string">Node.js</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/setup-node@v4</span>
+        <span class="hljs-attr">with:</span>
+          <span class="hljs-attr">node-version:</span> <span class="hljs-string">&#x27;20&#x27;</span>
+          <span class="hljs-attr">cache:</span> <span class="hljs-string">&#x27;npm&#x27;</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Install</span> <span class="hljs-string">dependencies</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Build</span> <span class="hljs-string">site</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">run</span> <span class="hljs-string">build</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Deploy</span> <span class="hljs-string">to</span> <span class="hljs-string">Netlify</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">nwtgck/actions-netlify@v3</span>
+        <span class="hljs-attr">with:</span>
+          <span class="hljs-attr">publish-dir:</span> <span class="hljs-string">&#x27;./dist&#x27;</span>
+          <span class="hljs-attr">production-branch:</span> <span class="hljs-string">main</span>
+          <span class="hljs-attr">production-deploy:</span> <span class="hljs-literal">true</span>
+        <span class="hljs-attr">env:</span>
+          <span class="hljs-attr">NETLIFY_AUTH_TOKEN:</span> <span class="hljs-string">${{</span> <span class="hljs-string">secrets.NETLIFY_AUTH_TOKEN</span> <span class="hljs-string">}}</span>
+          <span class="hljs-attr">NETLIFY_SITE_ID:</span> <span class="hljs-string">${{</span> <span class="hljs-string">secrets.NETLIFY_SITE_ID</span> <span class="hljs-string">}}</span>
+</code></pre>
+<p>To get the required secrets:</p>
+<ol>
+<li><strong>NETLIFY_AUTH_TOKEN</strong>: Create at Netlify User Settings under Applications</li>
+<li><strong>NETLIFY_SITE_ID</strong>: Found in Site Configuration under General</li>
+</ol>
+<p>Add these as repository secrets in GitHub Settings.</p>
+<h3 id="deploy-to-vercel" tabindex="-1"><a class="heading-anchor" href="#deploy-to-vercel" aria-hidden="true">#</a> Deploy to Vercel</h3>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">name:</span> <span class="hljs-string">Deploy</span> <span class="hljs-string">to</span> <span class="hljs-string">Vercel</span>
+
+<span class="hljs-attr">on:</span>
+  <span class="hljs-attr">push:</span>
+    <span class="hljs-attr">branches:</span> [<span class="hljs-string">main</span>]
+
+<span class="hljs-attr">jobs:</span>
+  <span class="hljs-attr">deploy:</span>
+    <span class="hljs-attr">runs-on:</span> <span class="hljs-string">ubuntu-latest</span>
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Checkout</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/checkout@v4</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Setup</span> <span class="hljs-string">Node.js</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/setup-node@v4</span>
+        <span class="hljs-attr">with:</span>
+          <span class="hljs-attr">node-version:</span> <span class="hljs-string">&#x27;20&#x27;</span>
+          <span class="hljs-attr">cache:</span> <span class="hljs-string">&#x27;npm&#x27;</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Install</span> <span class="hljs-string">dependencies</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Build</span> <span class="hljs-string">site</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">run</span> <span class="hljs-string">build</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Deploy</span> <span class="hljs-string">to</span> <span class="hljs-string">Vercel</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">amondnet/vercel-action@v25</span>
+        <span class="hljs-attr">with:</span>
+          <span class="hljs-attr">vercel-token:</span> <span class="hljs-string">${{</span> <span class="hljs-string">secrets.VERCEL_TOKEN</span> <span class="hljs-string">}}</span>
+          <span class="hljs-attr">vercel-org-id:</span> <span class="hljs-string">${{</span> <span class="hljs-string">secrets.VERCEL_ORG_ID</span> <span class="hljs-string">}}</span>
+          <span class="hljs-attr">vercel-project-id:</span> <span class="hljs-string">${{</span> <span class="hljs-string">secrets.VERCEL_PROJECT_ID</span> <span class="hljs-string">}}</span>
+          <span class="hljs-attr">working-directory:</span> <span class="hljs-string">./dist</span>
+          <span class="hljs-attr">vercel-args:</span> <span class="hljs-string">&#x27;--prod&#x27;</span>
+</code></pre>
+<h3 id="pull-request-previews" tabindex="-1"><a class="heading-anchor" href="#pull-request-previews" aria-hidden="true">#</a> Pull Request Previews</h3>
+<p>Deploy preview versions for pull requests:</p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">name:</span> <span class="hljs-string">Deploy</span> <span class="hljs-string">Preview</span>
+
+<span class="hljs-attr">on:</span>
+  <span class="hljs-attr">pull_request:</span>
+    <span class="hljs-attr">types:</span> [<span class="hljs-string">opened</span>, <span class="hljs-string">synchronize</span>, <span class="hljs-string">reopened</span>]
+
+<span class="hljs-attr">jobs:</span>
+  <span class="hljs-attr">preview:</span>
+    <span class="hljs-attr">runs-on:</span> <span class="hljs-string">ubuntu-latest</span>
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Checkout</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/checkout@v4</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Setup</span> <span class="hljs-string">Node.js</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/setup-node@v4</span>
+        <span class="hljs-attr">with:</span>
+          <span class="hljs-attr">node-version:</span> <span class="hljs-string">&#x27;20&#x27;</span>
+          <span class="hljs-attr">cache:</span> <span class="hljs-string">&#x27;npm&#x27;</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Install</span> <span class="hljs-string">dependencies</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Build</span> <span class="hljs-string">site</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">run</span> <span class="hljs-string">build</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Deploy</span> <span class="hljs-string">Preview</span> <span class="hljs-string">to</span> <span class="hljs-string">Netlify</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">nwtgck/actions-netlify@v3</span>
+        <span class="hljs-attr">with:</span>
+          <span class="hljs-attr">publish-dir:</span> <span class="hljs-string">&#x27;./dist&#x27;</span>
+          <span class="hljs-attr">production-deploy:</span> <span class="hljs-literal">false</span>
+          <span class="hljs-attr">github-token:</span> <span class="hljs-string">${{</span> <span class="hljs-string">secrets.GITHUB_TOKEN</span> <span class="hljs-string">}}</span>
+          <span class="hljs-attr">deploy-message:</span> <span class="hljs-string">&#x27;PR Preview: ${{ github.event.pull_request.title }}&#x27;</span>
+        <span class="hljs-attr">env:</span>
+          <span class="hljs-attr">NETLIFY_AUTH_TOKEN:</span> <span class="hljs-string">${{</span> <span class="hljs-string">secrets.NETLIFY_AUTH_TOKEN</span> <span class="hljs-string">}}</span>
+          <span class="hljs-attr">NETLIFY_SITE_ID:</span> <span class="hljs-string">${{</span> <span class="hljs-string">secrets.NETLIFY_SITE_ID</span> <span class="hljs-string">}}</span>
+</code></pre>
+<p>This posts a comment on the PR with a link to the preview deployment.</p>
+<h2 id="gitlab-ci" tabindex="-1"><a class="heading-anchor" href="#gitlab-ci" aria-hidden="true">#</a> GitLab CI</h2>
+<p>GitLab CI uses a <code>.gitlab-ci.yml</code> file in your repository root.</p>
+<h3 id="basic-pipeline" tabindex="-1"><a class="heading-anchor" href="#basic-pipeline" aria-hidden="true">#</a> Basic Pipeline</h3>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">image:</span> <span class="hljs-string">node:20-alpine</span>
+
+<span class="hljs-attr">stages:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-string">build</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-string">deploy</span>
+
+<span class="hljs-attr">cache:</span>
+  <span class="hljs-attr">key:</span> <span class="hljs-string">${CI_COMMIT_REF_SLUG}</span>
+  <span class="hljs-attr">paths:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">node_modules/</span>
+
+<span class="hljs-attr">build:</span>
+  <span class="hljs-attr">stage:</span> <span class="hljs-string">build</span>
+  <span class="hljs-attr">script:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">npm</span> <span class="hljs-string">run</span> <span class="hljs-string">build</span>
+  <span class="hljs-attr">artifacts:</span>
+    <span class="hljs-attr">paths:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">dist/</span>
+    <span class="hljs-attr">expire_in:</span> <span class="hljs-number">1</span> <span class="hljs-string">week</span>
+
+<span class="hljs-attr">pages:</span>
+  <span class="hljs-attr">stage:</span> <span class="hljs-string">deploy</span>
+  <span class="hljs-attr">script:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">mv</span> <span class="hljs-string">dist</span> <span class="hljs-string">public</span>
+  <span class="hljs-attr">artifacts:</span>
+    <span class="hljs-attr">paths:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">public</span>
+  <span class="hljs-attr">only:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">main</span>
+</code></pre>
+<p>This deploys to GitLab Pages. The site will be at <code>https://username.gitlab.io/repository-name/</code>.</p>
+<h3 id="deploy-to-external-host" tabindex="-1"><a class="heading-anchor" href="#deploy-to-external-host" aria-hidden="true">#</a> Deploy to External Host</h3>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">image:</span> <span class="hljs-string">node:20-alpine</span>
+
+<span class="hljs-attr">stages:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-string">build</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-string">deploy</span>
+
+<span class="hljs-attr">build:</span>
+  <span class="hljs-attr">stage:</span> <span class="hljs-string">build</span>
+  <span class="hljs-attr">script:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">npm</span> <span class="hljs-string">run</span> <span class="hljs-string">build</span>
+  <span class="hljs-attr">artifacts:</span>
+    <span class="hljs-attr">paths:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">dist/</span>
+    <span class="hljs-attr">expire_in:</span> <span class="hljs-number">1</span> <span class="hljs-string">day</span>
+
+<span class="hljs-attr">deploy_production:</span>
+  <span class="hljs-attr">stage:</span> <span class="hljs-string">deploy</span>
+  <span class="hljs-attr">image:</span> <span class="hljs-string">alpine:latest</span>
+  <span class="hljs-attr">before_script:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">apk</span> <span class="hljs-string">add</span> <span class="hljs-string">--no-cache</span> <span class="hljs-string">rsync</span> <span class="hljs-string">openssh-client</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">eval</span> <span class="hljs-string">$(ssh-agent</span> <span class="hljs-string">-s)</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">echo</span> <span class="hljs-string">&quot;$SSH_PRIVATE_KEY&quot;</span> <span class="hljs-string">|</span> <span class="hljs-string">tr</span> <span class="hljs-string">-d</span> <span class="hljs-string">&#x27;\r&#x27;</span> <span class="hljs-string">|</span> <span class="hljs-string">ssh-add</span> <span class="hljs-bullet">-</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">mkdir</span> <span class="hljs-string">-p</span> <span class="hljs-string">~/.ssh</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">chmod</span> <span class="hljs-number">700</span> <span class="hljs-string">~/.ssh</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">echo</span> <span class="hljs-string">&quot;$SSH_KNOWN_HOSTS&quot;</span> <span class="hljs-string">&gt;&gt;</span> <span class="hljs-string">~/.ssh/known_hosts</span>
+  <span class="hljs-attr">script:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">rsync</span> <span class="hljs-string">-avz</span> <span class="hljs-string">--delete</span> <span class="hljs-string">dist/</span> <span class="hljs-string">$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH</span>
+  <span class="hljs-attr">only:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">main</span>
+  <span class="hljs-attr">environment:</span>
+    <span class="hljs-attr">name:</span> <span class="hljs-string">production</span>
+    <span class="hljs-attr">url:</span> <span class="hljs-string">https://docs.yoursite.com</span>
+</code></pre>
+<p>Required CI/CD variables:</p>
+<ul>
+<li><code>SSH_PRIVATE_KEY</code>: Private key for server access</li>
+<li><code>SSH_KNOWN_HOSTS</code>: Server’s SSH host key</li>
+<li><code>DEPLOY_USER</code>: SSH username</li>
+<li><code>DEPLOY_HOST</code>: Server hostname</li>
+<li><code>DEPLOY_PATH</code>: Target directory on server</li>
+</ul>
+<h2 id="azure-devops-pipelines" tabindex="-1"><a class="heading-anchor" href="#azure-devops-pipelines" aria-hidden="true">#</a> Azure DevOps Pipelines</h2>
+<p>Create <code>azure-pipelines.yml</code>:</p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">trigger:</span>
+  <span class="hljs-attr">branches:</span>
+    <span class="hljs-attr">include:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">main</span>
+
+<span class="hljs-attr">pool:</span>
+  <span class="hljs-attr">vmImage:</span> <span class="hljs-string">&#x27;ubuntu-latest&#x27;</span>
+
+<span class="hljs-attr">steps:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">task:</span> <span class="hljs-string">NodeTool@0</span>
+    <span class="hljs-attr">inputs:</span>
+      <span class="hljs-attr">versionSpec:</span> <span class="hljs-string">&#x27;20.x&#x27;</span>
+    <span class="hljs-attr">displayName:</span> <span class="hljs-string">&#x27;Install Node.js&#x27;</span>
+
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">script:</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+    <span class="hljs-attr">displayName:</span> <span class="hljs-string">&#x27;Install dependencies&#x27;</span>
+
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">script:</span> <span class="hljs-string">npm</span> <span class="hljs-string">run</span> <span class="hljs-string">build</span>
+    <span class="hljs-attr">displayName:</span> <span class="hljs-string">&#x27;Build site&#x27;</span>
+
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">task:</span> <span class="hljs-string">PublishBuildArtifacts@1</span>
+    <span class="hljs-attr">inputs:</span>
+      <span class="hljs-attr">pathToPublish:</span> <span class="hljs-string">&#x27;dist&#x27;</span>
+      <span class="hljs-attr">artifactName:</span> <span class="hljs-string">&#x27;site&#x27;</span>
+    <span class="hljs-attr">displayName:</span> <span class="hljs-string">&#x27;Publish artifact&#x27;</span>
+</code></pre>
+<h3 id="deploy-to-azure-static-web-apps" tabindex="-1"><a class="heading-anchor" href="#deploy-to-azure-static-web-apps" aria-hidden="true">#</a> Deploy to Azure Static Web Apps</h3>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">trigger:</span>
+  <span class="hljs-attr">branches:</span>
+    <span class="hljs-attr">include:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">main</span>
+
+<span class="hljs-attr">pool:</span>
+  <span class="hljs-attr">vmImage:</span> <span class="hljs-string">&#x27;ubuntu-latest&#x27;</span>
+
+<span class="hljs-attr">steps:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">task:</span> <span class="hljs-string">NodeTool@0</span>
+    <span class="hljs-attr">inputs:</span>
+      <span class="hljs-attr">versionSpec:</span> <span class="hljs-string">&#x27;20.x&#x27;</span>
+
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">script:</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+    <span class="hljs-attr">displayName:</span> <span class="hljs-string">&#x27;Install dependencies&#x27;</span>
+
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">script:</span> <span class="hljs-string">npm</span> <span class="hljs-string">run</span> <span class="hljs-string">build</span>
+    <span class="hljs-attr">displayName:</span> <span class="hljs-string">&#x27;Build site&#x27;</span>
+
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">task:</span> <span class="hljs-string">AzureStaticWebApp@0</span>
+    <span class="hljs-attr">inputs:</span>
+      <span class="hljs-attr">app_location:</span> <span class="hljs-string">&#x27;/&#x27;</span>
+      <span class="hljs-attr">output_location:</span> <span class="hljs-string">&#x27;dist&#x27;</span>
+    <span class="hljs-attr">env:</span>
+      <span class="hljs-attr">azure_static_web_apps_api_token:</span> <span class="hljs-string">$(AZURE_STATIC_WEB_APPS_API_TOKEN)</span>
+</code></pre>
+<h2 id="circleci" tabindex="-1"><a class="heading-anchor" href="#circleci" aria-hidden="true">#</a> CircleCI</h2>
+<p>Create <code>.circleci/config.yml</code>:</p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">version:</span> <span class="hljs-number">2.1</span>
+
+<span class="hljs-attr">executors:</span>
+  <span class="hljs-attr">node-executor:</span>
+    <span class="hljs-attr">docker:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">image:</span> <span class="hljs-string">cimg/node:20.0</span>
+
+<span class="hljs-attr">jobs:</span>
+  <span class="hljs-attr">build:</span>
+    <span class="hljs-attr">executor:</span> <span class="hljs-string">node-executor</span>
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">checkout</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">restore_cache:</span>
+          <span class="hljs-attr">keys:</span>
+            <span class="hljs-bullet">-</span> <span class="hljs-string">npm-deps-{{</span> <span class="hljs-string">checksum</span> <span class="hljs-string">&quot;package-lock.json&quot;</span> <span class="hljs-string">}}</span>
+            <span class="hljs-bullet">-</span> <span class="hljs-string">npm-deps-</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">run:</span>
+          <span class="hljs-attr">name:</span> <span class="hljs-string">Install</span> <span class="hljs-string">dependencies</span>
+          <span class="hljs-attr">command:</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">save_cache:</span>
+          <span class="hljs-attr">key:</span> <span class="hljs-string">npm-deps-{{</span> <span class="hljs-string">checksum</span> <span class="hljs-string">&quot;package-lock.json&quot;</span> <span class="hljs-string">}}</span>
+          <span class="hljs-attr">paths:</span>
+            <span class="hljs-bullet">-</span> <span class="hljs-string">node_modules</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">run:</span>
+          <span class="hljs-attr">name:</span> <span class="hljs-string">Build</span> <span class="hljs-string">site</span>
+          <span class="hljs-attr">command:</span> <span class="hljs-string">npm</span> <span class="hljs-string">run</span> <span class="hljs-string">build</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">persist_to_workspace:</span>
+          <span class="hljs-attr">root:</span> <span class="hljs-string">.</span>
+          <span class="hljs-attr">paths:</span>
+            <span class="hljs-bullet">-</span> <span class="hljs-string">dist</span>
+
+  <span class="hljs-attr">deploy:</span>
+    <span class="hljs-attr">executor:</span> <span class="hljs-string">node-executor</span>
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">attach_workspace:</span>
+          <span class="hljs-attr">at:</span> <span class="hljs-string">.</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">run:</span>
+          <span class="hljs-attr">name:</span> <span class="hljs-string">Deploy</span> <span class="hljs-string">to</span> <span class="hljs-string">hosting</span>
+          <span class="hljs-attr">command:</span> <span class="hljs-string">|
+            # Add your deployment commands here
+            echo &quot;Deploying dist/ folder&quot;
+</span>
+<span class="hljs-attr">workflows:</span>
+  <span class="hljs-attr">build-and-deploy:</span>
+    <span class="hljs-attr">jobs:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">build</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">deploy:</span>
+          <span class="hljs-attr">requires:</span>
+            <span class="hljs-bullet">-</span> <span class="hljs-string">build</span>
+          <span class="hljs-attr">filters:</span>
+            <span class="hljs-attr">branches:</span>
+              <span class="hljs-attr">only:</span> <span class="hljs-string">main</span>
+</code></pre>
+<h2 id="build-caching" tabindex="-1"><a class="heading-anchor" href="#build-caching" aria-hidden="true">#</a> Build Caching</h2>
+<p>Caching dependencies speeds up CI builds significantly.</p>
+<h3 id="npm-cache" tabindex="-1"><a class="heading-anchor" href="#npm-cache" aria-hidden="true">#</a> npm Cache</h3>
+<p>Most CI systems support caching <code>node_modules</code>:</p>
+<p><strong>GitHub Actions:</strong></p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-bullet">-</span> <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/setup-node@v4</span>
+  <span class="hljs-attr">with:</span>
+    <span class="hljs-attr">node-version:</span> <span class="hljs-string">&#x27;20&#x27;</span>
+    <span class="hljs-attr">cache:</span> <span class="hljs-string">&#x27;npm&#x27;</span>
+</code></pre>
+<p><strong>GitLab CI:</strong></p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">cache:</span>
+  <span class="hljs-attr">key:</span> <span class="hljs-string">${CI_COMMIT_REF_SLUG}</span>
+  <span class="hljs-attr">paths:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">node_modules/</span>
+</code></pre>
+<p><strong>CircleCI:</strong></p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-bullet">-</span> <span class="hljs-attr">restore_cache:</span>
+    <span class="hljs-attr">keys:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">npm-deps-{{</span> <span class="hljs-string">checksum</span> <span class="hljs-string">&quot;package-lock.json&quot;</span> <span class="hljs-string">}}</span>
+</code></pre>
+<h2 id="environment-variables" tabindex="-1"><a class="heading-anchor" href="#environment-variables" aria-hidden="true">#</a> Environment Variables</h2>
+<p>Store sensitive values as secrets, not in your repository.</p>
+<h3 id="common-secrets" tabindex="-1"><a class="heading-anchor" href="#common-secrets" aria-hidden="true">#</a> Common Secrets</h3>
+<table>
+<thead>
+<tr>
+<th>Secret</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NETLIFY_AUTH_TOKEN</code></td>
+<td>Netlify API authentication</td>
+</tr>
+<tr>
+<td><code>NETLIFY_SITE_ID</code></td>
+<td>Target Netlify site</td>
+</tr>
+<tr>
+<td><code>VERCEL_TOKEN</code></td>
+<td>Vercel API authentication</td>
+</tr>
+<tr>
+<td><code>SSH_PRIVATE_KEY</code></td>
+<td>Server access for self-hosting</td>
+</tr>
+</tbody>
+</table>
+<h3 id="adding-secrets" tabindex="-1"><a class="heading-anchor" href="#adding-secrets" aria-hidden="true">#</a> Adding Secrets</h3>
+<p><strong>GitHub:</strong>
+Settings &gt; Secrets and variables &gt; Actions &gt; New repository secret</p>
+<p><strong>GitLab:</strong>
+Settings &gt; CI/CD &gt; Variables</p>
+<p><strong>CircleCI:</strong>
+Project Settings &gt; Environment Variables</p>
+<h2 id="build-notifications" tabindex="-1"><a class="heading-anchor" href="#build-notifications" aria-hidden="true">#</a> Build Notifications</h2>
+<h3 id="slack-notifications" tabindex="-1"><a class="heading-anchor" href="#slack-notifications" aria-hidden="true">#</a> Slack Notifications</h3>
+<p>Add to your GitHub Actions workflow:</p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Notify</span> <span class="hljs-string">Slack</span>
+  <span class="hljs-attr">if:</span> <span class="hljs-string">always()</span>
+  <span class="hljs-attr">uses:</span> <span class="hljs-string">8398a7/action-slack@v3</span>
+  <span class="hljs-attr">with:</span>
+    <span class="hljs-attr">status:</span> <span class="hljs-string">${{</span> <span class="hljs-string">job.status</span> <span class="hljs-string">}}</span>
+    <span class="hljs-attr">fields:</span> <span class="hljs-string">repo,message,commit,author,action,eventName,ref,workflow</span>
+  <span class="hljs-attr">env:</span>
+    <span class="hljs-attr">SLACK_WEBHOOK_URL:</span> <span class="hljs-string">${{</span> <span class="hljs-string">secrets.SLACK_WEBHOOK_URL</span> <span class="hljs-string">}}</span>
+</code></pre>
+<h3 id="email-notifications" tabindex="-1"><a class="heading-anchor" href="#email-notifications" aria-hidden="true">#</a> Email Notifications</h3>
+<p>Most CI platforms send email notifications by default for failed builds. Check platform settings to configure.</p>
+<h2 id="troubleshooting-ci-builds" tabindex="-1"><a class="heading-anchor" href="#troubleshooting-ci-builds" aria-hidden="true">#</a> Troubleshooting CI Builds</h2>
+<h3 id="build-fails-in-ci-but-works-locally" tabindex="-1"><a class="heading-anchor" href="#build-fails-in-ci-but-works-locally" aria-hidden="true">#</a> Build Fails in CI but Works Locally</h3>
+<p>Common causes:</p>
+<ol>
+<li><strong>Missing dependencies</strong>: Ensure <code>package-lock.json</code> is committed</li>
+<li><strong>Node version mismatch</strong>: Specify exact version in CI</li>
+<li><strong>Case sensitivity</strong>: Linux is case-sensitive, Windows/Mac are not</li>
+<li><strong>Missing files</strong>: Check <code>.gitignore</code> is not excluding needed files</li>
+</ol>
+<h3 id="slow-builds" tabindex="-1"><a class="heading-anchor" href="#slow-builds" aria-hidden="true">#</a> Slow Builds</h3>
+<p>Improve build speed:</p>
+<ol>
+<li>Enable dependency caching</li>
+<li>Use <code>npm ci</code> instead of <code>npm install</code></li>
+<li>Use lightweight base images</li>
+<li>Avoid unnecessary steps</li>
+</ol>
+<h3 id="debug-ci-issues" tabindex="-1"><a class="heading-anchor" href="#debug-ci-issues" aria-hidden="true">#</a> Debug CI Issues</h3>
+<p>Add debug output:</p>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Debug</span> <span class="hljs-string">info</span>
+  <span class="hljs-attr">run:</span> <span class="hljs-string">|
+    node --version
+    npm --version
+    ls -la
+    cat package.json
+</span></code></pre>
+<blockquote class="alert alert-tip">
+<p><span class="alert-title"><span class="alert-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"/></svg></span>TIP</span>
+Most CI platforms allow re-running failed jobs with SSH access for debugging. Check your platform’s documentation for this feature.</p>
+</blockquote>
+
+      </article>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <p>Built with <a href="https://github.com/KineticEnforcer/MarkStack" target="_blank" rel="noopener noreferrer">MarkStack</a></p>
+      <p class="copyright">© 2026 KineticEnforcer. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="/markstackdemo/js/app.js"></script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Apply theme immediately to prevent flash of unstyled content (FOUC)
+    (function() {
+      const theme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script>
+    // Apply sidebar state immediately to prevent layout shift
+    (function() {
+      const savedState = localStorage.getItem('sidebar-state');
+      if (savedState === 'collapsed') {
+        document.documentElement.classList.add('sidebar-collapsed');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Deploy your MarkStack site to Netlify, Vercel, GitHub Pages, Cloudflare Pages, or self-host with nginx and Apache.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta property="og:title" content="Deployment Guide | MarkStack">
+  <meta property="og:description" content="Deploy your MarkStack site to Netlify, Vercel, GitHub Pages, Cloudflare Pages, or self-host with nginx and Apache.">
+  <meta property="og:url" content="https://kineticenforcer.github.io/markstackdemo/build-and-deploy/deployment-guide">
+  <meta property="og:type" content="website">
+  <title>Deployment Guide | MarkStack</title>
+  <link rel="stylesheet" href="/markstackdemo/css/main.css">
+  <link rel="stylesheet" href="/markstackdemo/css/hljs-theme.css">
+  <link rel="icon" href="/markstackdemo/svg/logo.svg" type="image/svg+xml">
+</head>
+<body data-baseurl="/markstackdemo">
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/markstackdemo/" class="site-logo">
+        <img src="/markstackdemo/svg/logo.svg" alt="Logo" class="logo-icon" width="32" height="32">
+        <span class="logo-text">MarkStack</span>
+      </a>
+      
+      <div class="header-search">
+        <div class="search-container">
+          <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search documentation..." autocomplete="off">
+          <kbd class="search-shortcut">Ctrl+K</kbd>
+        </div>
+        <div id="search-results" class="search-results"></div>
+      </div>
+      
+      <div class="header-actions">
+        <a href="https://github.com/KineticEnforcer/MarkStack" target="_blank" rel="noopener noreferrer" class="github-link" aria-label="View on GitHub">
+          <svg class="github-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+        </a>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="breadcrumb-bar">
+    <div class="breadcrumb-container">
+      <a href="/markstackdemo/" class="breadcrumb-home" title="Home"><svg class="breadcrumb-home-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V9.5a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v4.5h2.25a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z"/></svg></a><span class="breadcrumb-separator">/</span><a href="/markstackdemo/build-and-deploy/">Build and Deploy</a><span class="breadcrumb-separator">/</span><span class="breadcrumb-current">Deployment Guide</span>
+    </div>
+  </div>
+
+  <button class="sidebar-collapse-toggle" id="sidebar-toggle" title="Toggle sidebar">
+    <svg class="sidebar-toggle-icon collapse-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+      <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"/>
+    </svg>
+    <svg class="sidebar-toggle-icon expand-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+      <path d="M8.22 3.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.53a.75.75 0 0 1 0-1.06Z"/>
+    </svg>
+  </button>
+
+  <div class="main-layout">
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <ul class="sidebar-list sidebar-level-0">
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/architecture/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Architecture</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/build-pipeline"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Build Pipeline</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/navigation-and-routing"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Navigation and Routing</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/architecture/search-indexing"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Search Indexing</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/authoring-content/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Authoring Content</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/content-model"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Content Model</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/examples"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Examples</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/frontmatter"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Frontmatter</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/markdown-features"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Markdown Features</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/authoring-content/media-and-links"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Media and Links</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder sidebar-expanded" data-state="expanded"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"/></svg></button><a href="/markstackdemo/build-and-deploy/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Build and Deploy</a></div><div class="sidebar-children expanded"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/cicd-integration"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>CI/CD Integration</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/build-and-deploy/commands-reference"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Commands Reference</a></li>
+<li class="sidebar-item sidebar-file sidebar-current"><a href="/markstackdemo/build-and-deploy/deployment-guide"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Deployment Guide</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/configuration/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Configuration</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/configuration/homepage-content"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Homepage Content</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/configuration/site-config"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Site Config</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/customization/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Customization</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/customization/templates"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Templates</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/customization/themes-and-styling"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Themes and Styling</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/getting-started/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Getting Started</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/installation"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Installation</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/project-structure"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Project Structure</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/getting-started/quickstart"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Quickstart</a></li>
+</ul></div></li>
+<li class="sidebar-item sidebar-folder" data-state="collapsed"><div class="sidebar-folder-header"><button class="sidebar-toggle" aria-label="Toggle folder"><svg class="sidebar-chevron" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg></button><a href="/markstackdemo/troubleshooting/"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"/></svg>Troubleshooting</a></div><div class="sidebar-children collapsed"><ul class="sidebar-list sidebar-level-1">
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/troubleshooting/common-issues"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Common Issues</a></li>
+<li class="sidebar-item sidebar-file"><a href="/markstackdemo/troubleshooting/frequently-asked-questions"><svg class="sidebar-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/></svg>Frequently Asked Questions</a></li>
+</ul></div></li>
+</ul>
+      </nav>
+    </aside>
+    
+    <main class="content">
+      <article class="article">
+        <h1 id="deployment-guide" tabindex="-1"><a class="heading-anchor" href="#deployment-guide" aria-hidden="true">#</a> Deployment Guide</h1>
+<p>MarkStack generates a static site that can be deployed anywhere static files are served. This guide covers deployment to popular platforms and self-hosting options.</p>
+<h2 id="pre-deployment-checklist" tabindex="-1"><a class="heading-anchor" href="#pre-deployment-checklist" aria-hidden="true">#</a> Pre-Deployment Checklist</h2>
+<p>Before deploying, verify your site is ready:</p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> Site builds without errors: <code>npm run build</code></li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> All pages render correctly in local preview</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> Search functionality works</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> Navigation is correct</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> <code>siteconfig.json</code> has the correct <code>siteUrl</code> for production</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> Images and links work</li>
+</ul>
+<h3 id="update-site-url" tabindex="-1"><a class="heading-anchor" href="#update-site-url" aria-hidden="true">#</a> Update Site URL</h3>
+<p>Edit <code>siteconfig.json</code> and set the production URL:</p>
+<pre class="hljs" data-language="json"><code><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;siteUrl&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://docs.yoursite.com&quot;</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>This URL is used in OpenGraph meta tags for social sharing. Rebuild after changing.</p>
+<h2 id="netlify" tabindex="-1"><a class="heading-anchor" href="#netlify" aria-hidden="true">#</a> Netlify</h2>
+<p>Netlify offers free hosting for static sites with automatic deployments from Git.</p>
+<h3 id="deploy-from-git-recommended-" tabindex="-1"><a class="heading-anchor" href="#deploy-from-git-recommended-" aria-hidden="true">#</a> Deploy from Git (Recommended)</h3>
+<ol>
+<li>Push your project to GitHub, GitLab, or Bitbucket</li>
+<li>Sign in to <a href="https://app.netlify.com/">Netlify</a></li>
+<li>Click “Add new site” and select “Import an existing project”</li>
+<li>Connect your Git provider and select your repository</li>
+<li>Configure build settings:
+<ul>
+<li><strong>Build command</strong>: <code>npm run build</code></li>
+<li><strong>Publish directory</strong>: <code>dist</code></li>
+</ul>
+</li>
+<li>Click “Deploy site”</li>
+</ol>
+<p>Netlify will build and deploy automatically on every push to your main branch.</p>
+<h3 id="create-netlify-toml" tabindex="-1"><a class="heading-anchor" href="#create-netlify-toml" aria-hidden="true">#</a> Create netlify.toml</h3>
+<p>For consistent builds, add a <code>netlify.toml</code> file to your project root:</p>
+<pre class="hljs" data-language="toml"><code><span class="hljs-section">[build]</span>
+  <span class="hljs-attr">command</span> = <span class="hljs-string">&quot;npm run build&quot;</span>
+  <span class="hljs-attr">publish</span> = <span class="hljs-string">&quot;dist&quot;</span>
+
+<span class="hljs-section">[build.environment]</span>
+  <span class="hljs-attr">NODE_VERSION</span> = <span class="hljs-string">&quot;20&quot;</span>
+
+<span class="hljs-comment"># Redirect rules for clean URLs</span>
+<span class="hljs-section">[[redirects]]</span>
+  <span class="hljs-attr">from</span> = <span class="hljs-string">&quot;/*&quot;</span>
+  <span class="hljs-attr">to</span> = <span class="hljs-string">&quot;/404.html&quot;</span>
+  <span class="hljs-attr">status</span> = <span class="hljs-number">404</span>
+</code></pre>
+<h3 id="manual-deploy-with-cli" tabindex="-1"><a class="heading-anchor" href="#manual-deploy-with-cli" aria-hidden="true">#</a> Manual Deploy with CLI</h3>
+<p>For one-time deploys without Git:</p>
+<pre class="hljs" data-language="bash"><code><span class="hljs-comment"># Install Netlify CLI</span>
+npm install -g netlify-cli
+
+<span class="hljs-comment"># Login to Netlify</span>
+netlify login
+
+<span class="hljs-comment"># Build your site</span>
+npm run build
+
+<span class="hljs-comment"># Deploy to production</span>
+netlify deploy --prod --<span class="hljs-built_in">dir</span>=dist
+</code></pre>
+<h3 id="custom-domain" tabindex="-1"><a class="heading-anchor" href="#custom-domain" aria-hidden="true">#</a> Custom Domain</h3>
+<ol>
+<li>Go to Site settings in Netlify</li>
+<li>Click “Domain management”</li>
+<li>Add your custom domain</li>
+<li>Follow DNS configuration instructions</li>
+<li>Enable HTTPS (automatic with Let’s Encrypt)</li>
+</ol>
+<h2 id="vercel" tabindex="-1"><a class="heading-anchor" href="#vercel" aria-hidden="true">#</a> Vercel</h2>
+<p>Vercel provides fast global hosting with Git integration.</p>
+<h3 id="deploy-from-git" tabindex="-1"><a class="heading-anchor" href="#deploy-from-git" aria-hidden="true">#</a> Deploy from Git</h3>
+<ol>
+<li>Push your project to GitHub, GitLab, or Bitbucket</li>
+<li>Sign in to <a href="https://vercel.com/">Vercel</a></li>
+<li>Click “Add New Project”</li>
+<li>Import your repository</li>
+<li>Configure settings:
+<ul>
+<li><strong>Framework Preset</strong>: Other</li>
+<li><strong>Build Command</strong>: <code>npm run build</code></li>
+<li><strong>Output Directory</strong>: <code>dist</code></li>
+</ul>
+</li>
+<li>Click “Deploy”</li>
+</ol>
+<h3 id="create-vercel-json" tabindex="-1"><a class="heading-anchor" href="#create-vercel-json" aria-hidden="true">#</a> Create vercel.json</h3>
+<p>Add a <code>vercel.json</code> file for configuration:</p>
+<pre class="hljs" data-language="json"><code><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;buildCommand&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;npm run build&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;outputDirectory&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;dist&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;routes&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+    <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;handle&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;filesystem&quot;</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;src&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;/(.*)&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;dest&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;/404.html&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">404</span> <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h3 id="manual-deploy-with-cli-1" tabindex="-1"><a class="heading-anchor" href="#manual-deploy-with-cli-1" aria-hidden="true">#</a> Manual Deploy with CLI</h3>
+<pre class="hljs" data-language="bash"><code><span class="hljs-comment"># Install Vercel CLI</span>
+npm install -g vercel
+
+<span class="hljs-comment"># Login</span>
+vercel login
+
+<span class="hljs-comment"># Build</span>
+npm run build
+
+<span class="hljs-comment"># Deploy (follow prompts)</span>
+vercel --prod
+</code></pre>
+<h2 id="github-pages" tabindex="-1"><a class="heading-anchor" href="#github-pages" aria-hidden="true">#</a> GitHub Pages</h2>
+<p>GitHub Pages hosts static sites directly from your repository.</p>
+<h3 id="using-github-actions-recommended-" tabindex="-1"><a class="heading-anchor" href="#using-github-actions-recommended-" aria-hidden="true">#</a> Using GitHub Actions (Recommended)</h3>
+<ol>
+<li>Create <code>.github/workflows/deploy.yml</code>:</li>
+</ol>
+<pre class="hljs" data-language="yaml"><code><span class="hljs-attr">name:</span> <span class="hljs-string">Deploy</span> <span class="hljs-string">to</span> <span class="hljs-string">GitHub</span> <span class="hljs-string">Pages</span>
+
+<span class="hljs-attr">on:</span>
+  <span class="hljs-attr">push:</span>
+    <span class="hljs-attr">branches:</span> [<span class="hljs-string">main</span>]
+  <span class="hljs-attr">workflow_dispatch:</span>
+
+<span class="hljs-attr">permissions:</span>
+  <span class="hljs-attr">contents:</span> <span class="hljs-string">read</span>
+  <span class="hljs-attr">pages:</span> <span class="hljs-string">write</span>
+  <span class="hljs-attr">id-token:</span> <span class="hljs-string">write</span>
+
+<span class="hljs-attr">concurrency:</span>
+  <span class="hljs-attr">group:</span> <span class="hljs-string">&quot;pages&quot;</span>
+  <span class="hljs-attr">cancel-in-progress:</span> <span class="hljs-literal">true</span>
+
+<span class="hljs-attr">jobs:</span>
+  <span class="hljs-attr">build:</span>
+    <span class="hljs-attr">runs-on:</span> <span class="hljs-string">ubuntu-latest</span>
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Checkout</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/checkout@v4</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Setup</span> <span class="hljs-string">Node</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/setup-node@v4</span>
+        <span class="hljs-attr">with:</span>
+          <span class="hljs-attr">node-version:</span> <span class="hljs-string">&#x27;20&#x27;</span>
+          <span class="hljs-attr">cache:</span> <span class="hljs-string">&#x27;npm&#x27;</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Install</span> <span class="hljs-string">dependencies</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Build</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">run</span> <span class="hljs-string">build</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Upload</span> <span class="hljs-string">artifact</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/upload-pages-artifact@v3</span>
+        <span class="hljs-attr">with:</span>
+          <span class="hljs-attr">path:</span> <span class="hljs-string">./dist</span>
+
+  <span class="hljs-attr">deploy:</span>
+    <span class="hljs-attr">needs:</span> <span class="hljs-string">build</span>
+    <span class="hljs-attr">runs-on:</span> <span class="hljs-string">ubuntu-latest</span>
+    <span class="hljs-attr">environment:</span>
+      <span class="hljs-attr">name:</span> <span class="hljs-string">github-pages</span>
+      <span class="hljs-attr">url:</span> <span class="hljs-string">${{</span> <span class="hljs-string">steps.deployment.outputs.page_url</span> <span class="hljs-string">}}</span>
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Deploy</span> <span class="hljs-string">to</span> <span class="hljs-string">GitHub</span> <span class="hljs-string">Pages</span>
+        <span class="hljs-attr">id:</span> <span class="hljs-string">deployment</span>
+        <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/deploy-pages@v4</span>
+</code></pre>
+<ol start="2">
+<li>In your repository settings, go to Pages</li>
+<li>Under “Build and deployment”, select “GitHub Actions”</li>
+<li>Push to main branch to trigger deployment</li>
+</ol>
+<h3 id="github-pages-url" tabindex="-1"><a class="heading-anchor" href="#github-pages-url" aria-hidden="true">#</a> GitHub Pages URL</h3>
+<p>Your site will be available at:</p>
+<ul>
+<li>Organization/user site: <code>https://username.github.io/</code></li>
+<li>Project site: <code>https://username.github.io/repository-name/</code></li>
+</ul>
+<p>For project sites, you may need to update base URLs in your config.</p>
+<h2 id="cloudflare-pages" tabindex="-1"><a class="heading-anchor" href="#cloudflare-pages" aria-hidden="true">#</a> Cloudflare Pages</h2>
+<p>Cloudflare Pages offers fast global hosting with Git integration.</p>
+<h3 id="deploy-from-git-1" tabindex="-1"><a class="heading-anchor" href="#deploy-from-git-1" aria-hidden="true">#</a> Deploy from Git</h3>
+<ol>
+<li>Sign in to <a href="https://dash.cloudflare.com/">Cloudflare Dashboard</a></li>
+<li>Go to Workers and Pages</li>
+<li>Click “Create application” then “Pages”</li>
+<li>Connect to Git and select your repository</li>
+<li>Configure build settings:
+<ul>
+<li><strong>Framework preset</strong>: None</li>
+<li><strong>Build command</strong>: <code>npm run build</code></li>
+<li><strong>Build output directory</strong>: <code>dist</code></li>
+</ul>
+</li>
+<li>Click “Save and Deploy”</li>
+</ol>
+<h3 id="create-wrangler-toml" tabindex="-1"><a class="heading-anchor" href="#create-wrangler-toml" aria-hidden="true">#</a> Create wrangler.toml</h3>
+<p>For Cloudflare-specific configuration:</p>
+<pre class="hljs" data-language="toml"><code><span class="hljs-attr">name</span> = <span class="hljs-string">&quot;your-site-name&quot;</span>
+<span class="hljs-attr">pages_build_output_dir</span> = <span class="hljs-string">&quot;dist&quot;</span>
+</code></pre>
+<h2 id="self-hosting" tabindex="-1"><a class="heading-anchor" href="#self-hosting" aria-hidden="true">#</a> Self-Hosting</h2>
+<p>For complete control, host the static files yourself.</p>
+<h3 id="nginx-configuration" tabindex="-1"><a class="heading-anchor" href="#nginx-configuration" aria-hidden="true">#</a> nginx Configuration</h3>
+<pre class="hljs" data-language="nginx"><code><span class="hljs-section">server</span> {
+    <span class="hljs-attribute">listen</span> <span class="hljs-number">80</span>;
+    <span class="hljs-attribute">server_name</span> docs.yoursite.com;
+    
+    <span class="hljs-comment"># Redirect to HTTPS</span>
+    <span class="hljs-attribute">return</span> <span class="hljs-number">301</span> https://<span class="hljs-variable">$server_name</span><span class="hljs-variable">$request_uri</span>;
+}
+
+<span class="hljs-section">server</span> {
+    <span class="hljs-attribute">listen</span> <span class="hljs-number">443</span> ssl http2;
+    <span class="hljs-attribute">server_name</span> docs.yoursite.com;
+    
+    <span class="hljs-comment"># SSL certificates (use Let&#x27;s Encrypt)</span>
+    <span class="hljs-attribute">ssl_certificate</span> /etc/letsencrypt/live/docs.yoursite.com/fullchain.pem;
+    <span class="hljs-attribute">ssl_certificate_key</span> /etc/letsencrypt/live/docs.yoursite.com/privkey.pem;
+    
+    <span class="hljs-attribute">root</span> /var/www/docs.yoursite.com;
+    <span class="hljs-attribute">index</span> index.html;
+    
+    <span class="hljs-comment"># Clean URLs</span>
+    <span class="hljs-section">location</span> / {
+        <span class="hljs-attribute">try_files</span> <span class="hljs-variable">$uri</span> <span class="hljs-variable">$uri</span>/ <span class="hljs-variable">$uri</span>/index.html =<span class="hljs-number">404</span>;
+    }
+    
+    <span class="hljs-comment"># Custom 404 page</span>
+    <span class="hljs-attribute">error_page</span> <span class="hljs-number">404</span> /<span class="hljs-number">404</span>.html;
+    
+    <span class="hljs-comment"># Cache static assets</span>
+    <span class="hljs-section">location</span> <span class="hljs-regexp">~* \.(css|js|svg|png|jpg|jpeg|gif|ico|woff2)$</span> {
+        <span class="hljs-attribute">expires</span> <span class="hljs-number">1y</span>;
+        <span class="hljs-attribute">add_header</span> Cache-Control <span class="hljs-string">&quot;public, immutable&quot;</span>;
+    }
+    
+    <span class="hljs-comment"># Security headers</span>
+    <span class="hljs-attribute">add_header</span> X-Content-Type-Options nosniff;
+    <span class="hljs-attribute">add_header</span> X-Frame-Options DENY;
+    <span class="hljs-attribute">add_header</span> X-XSS-Protection <span class="hljs-string">&quot;1; mode=block&quot;</span>;
+}
+</code></pre>
+<h3 id="apache-configuration" tabindex="-1"><a class="heading-anchor" href="#apache-configuration" aria-hidden="true">#</a> Apache Configuration</h3>
+<p>Create a <code>.htaccess</code> file in your document root:</p>
+<pre class="hljs" data-language="apache"><code><span class="hljs-comment"># Enable rewrite engine</span>
+<span class="hljs-attribute">RewriteEngine</span> <span class="hljs-literal">On</span>
+
+<span class="hljs-comment"># Redirect HTTP to HTTPS</span>
+<span class="hljs-attribute">RewriteCond</span> <span class="hljs-variable">%{HTTPS}</span> <span class="hljs-literal">off</span>
+<span class="hljs-attribute">RewriteRule</span> ^ https://<span class="hljs-variable">%{HTTP_HOST}</span><span class="hljs-variable">%{REQUEST_URI}</span><span class="hljs-meta"> [L,R=301]</span>
+
+<span class="hljs-comment"># Clean URLs</span>
+<span class="hljs-attribute">RewriteCond</span> <span class="hljs-variable">%{REQUEST_FILENAME}</span> !-f
+<span class="hljs-attribute">RewriteCond</span> <span class="hljs-variable">%{REQUEST_FILENAME}</span> !-d
+<span class="hljs-attribute">RewriteCond</span> <span class="hljs-variable">%{REQUEST_FILENAME}</span>/index.html -f
+<span class="hljs-attribute">RewriteRule</span> ^(.*)$ $<span class="hljs-number">1</span>/index.html<span class="hljs-meta"> [L]</span>
+
+<span class="hljs-comment"># Custom 404</span>
+<span class="hljs-attribute">ErrorDocument</span> <span class="hljs-number">404</span> /<span class="hljs-number">404</span>.html
+
+<span class="hljs-comment"># Cache static assets</span>
+<span class="hljs-section">&lt;IfModule mod_expires.c&gt;</span>
+    <span class="hljs-attribute">ExpiresActive</span> <span class="hljs-literal">On</span>
+    <span class="hljs-attribute">ExpiresByType</span> text/css <span class="hljs-string">&quot;access plus 1 year&quot;</span>
+    <span class="hljs-attribute">ExpiresByType</span> application/javascript <span class="hljs-string">&quot;access plus 1 year&quot;</span>
+    <span class="hljs-attribute">ExpiresByType</span> image/svg+xml <span class="hljs-string">&quot;access plus 1 year&quot;</span>
+    <span class="hljs-attribute">ExpiresByType</span> image/png <span class="hljs-string">&quot;access plus 1 year&quot;</span>
+    <span class="hljs-attribute">ExpiresByType</span> image/jpeg <span class="hljs-string">&quot;access plus 1 year&quot;</span>
+<span class="hljs-section">&lt;/IfModule&gt;</span>
+
+<span class="hljs-comment"># Security headers</span>
+<span class="hljs-section">&lt;IfModule mod_headers.c&gt;</span>
+    <span class="hljs-attribute">Header</span> set X-Content-Type-Options <span class="hljs-string">&quot;nosniff&quot;</span>
+    <span class="hljs-attribute">Header</span> set X-Frame-Options <span class="hljs-string">&quot;DENY&quot;</span>
+    <span class="hljs-attribute">Header</span> set X-XSS-Protection <span class="hljs-string">&quot;1; mode=block&quot;</span>
+<span class="hljs-section">&lt;/IfModule&gt;</span>
+</code></pre>
+<h3 id="caddy-configuration" tabindex="-1"><a class="heading-anchor" href="#caddy-configuration" aria-hidden="true">#</a> Caddy Configuration</h3>
+<p>Caddy provides automatic HTTPS:</p>
+<pre class="hljs"><code>docs.yoursite.com {
+    root * /var/www/docs.yoursite.com
+    file_server
+    
+    # Clean URLs
+    try_files {path} {path}/ {path}/index.html
+    
+    # Custom 404
+    handle_errors {
+        rewrite * /404.html
+        file_server
+    }
+    
+    # Cache headers
+    @static {
+        path *.css *.js *.svg *.png *.jpg *.jpeg *.gif *.woff2
+    }
+    header @static Cache-Control &quot;public, max-age=31536000, immutable&quot;
+}
+</code></pre>
+<h3 id="deploying-to-self-hosted-server" tabindex="-1"><a class="heading-anchor" href="#deploying-to-self-hosted-server" aria-hidden="true">#</a> Deploying to Self-Hosted Server</h3>
+<pre class="hljs" data-language="bash"><code><span class="hljs-comment"># Build locally</span>
+npm run build
+
+<span class="hljs-comment"># Copy to server (example using rsync)</span>
+rsync -avz --delete dist/ user@server:/var/www/docs.yoursite.com/
+
+<span class="hljs-comment"># Or using SCP</span>
+scp -r dist/* user@server:/var/www/docs.yoursite.com/
+</code></pre>
+<h2 id="docker-deployment" tabindex="-1"><a class="heading-anchor" href="#docker-deployment" aria-hidden="true">#</a> Docker Deployment</h2>
+<h3 id="create-dockerfile" tabindex="-1"><a class="heading-anchor" href="#create-dockerfile" aria-hidden="true">#</a> Create Dockerfile</h3>
+<pre class="hljs" data-language="dockerfile"><code><span class="hljs-keyword">FROM</span> node:<span class="hljs-number">20</span>-alpine AS builder
+<span class="hljs-keyword">WORKDIR</span><span class="language-bash"> /app</span>
+<span class="hljs-keyword">COPY</span><span class="language-bash"> package*.json ./</span>
+<span class="hljs-keyword">RUN</span><span class="language-bash"> npm ci</span>
+<span class="hljs-keyword">COPY</span><span class="language-bash"> . .</span>
+<span class="hljs-keyword">RUN</span><span class="language-bash"> npm run build</span>
+
+<span class="hljs-keyword">FROM</span> nginx:alpine
+<span class="hljs-keyword">COPY</span><span class="language-bash"> --from=builder /app/dist /usr/share/nginx/html</span>
+<span class="hljs-keyword">COPY</span><span class="language-bash"> nginx.conf /etc/nginx/conf.d/default.conf</span>
+<span class="hljs-keyword">EXPOSE</span> <span class="hljs-number">80</span>
+<span class="hljs-keyword">CMD</span><span class="language-bash"> [<span class="hljs-string">&quot;nginx&quot;</span>, <span class="hljs-string">&quot;-g&quot;</span>, <span class="hljs-string">&quot;daemon off;&quot;</span>]</span>
+</code></pre>
+<h3 id="create-nginx-conf" tabindex="-1"><a class="heading-anchor" href="#create-nginx-conf" aria-hidden="true">#</a> Create nginx.conf</h3>
+<pre class="hljs" data-language="nginx"><code><span class="hljs-section">server</span> {
+    <span class="hljs-attribute">listen</span> <span class="hljs-number">80</span>;
+    <span class="hljs-attribute">root</span> /usr/share/nginx/html;
+    <span class="hljs-attribute">index</span> index.html;
+    
+    <span class="hljs-section">location</span> / {
+        <span class="hljs-attribute">try_files</span> <span class="hljs-variable">$uri</span> <span class="hljs-variable">$uri</span>/ <span class="hljs-variable">$uri</span>/index.html =<span class="hljs-number">404</span>;
+    }
+    
+    <span class="hljs-attribute">error_page</span> <span class="hljs-number">404</span> /<span class="hljs-number">404</span>.html;
+}
+</code></pre>
+<h3 id="build-and-run" tabindex="-1"><a class="heading-anchor" href="#build-and-run" aria-hidden="true">#</a> Build and Run</h3>
+<pre class="hljs" data-language="bash"><code>docker build -t markstack-docs .
+docker run -p 8080:80 markstack-docs
+</code></pre>
+<h2 id="cdn-configuration" tabindex="-1"><a class="heading-anchor" href="#cdn-configuration" aria-hidden="true">#</a> CDN Configuration</h2>
+<p>For better performance, serve assets through a CDN:</p>
+<h3 id="recommended-cdn-settings" tabindex="-1"><a class="heading-anchor" href="#recommended-cdn-settings" aria-hidden="true">#</a> Recommended CDN Settings</h3>
+<table>
+<thead>
+<tr>
+<th>Asset Type</th>
+<th>Cache Duration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HTML files</td>
+<td>1 hour or less</td>
+</tr>
+<tr>
+<td>CSS files</td>
+<td>1 year</td>
+</tr>
+<tr>
+<td>JavaScript</td>
+<td>1 year</td>
+</tr>
+<tr>
+<td>Images</td>
+<td>1 year</td>
+</tr>
+<tr>
+<td>Fonts</td>
+<td>1 year</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cache-invalidation" tabindex="-1"><a class="heading-anchor" href="#cache-invalidation" aria-hidden="true">#</a> Cache Invalidation</h3>
+<p>Since MarkStack rebuilds everything on each build, use cache-busting only for HTML. CSS and JS can be cached long-term because they do not change frequently.</p>
+<h2 id="performance-optimization" tabindex="-1"><a class="heading-anchor" href="#performance-optimization" aria-hidden="true">#</a> Performance Optimization</h2>
+<h3 id="compression" tabindex="-1"><a class="heading-anchor" href="#compression" aria-hidden="true">#</a> Compression</h3>
+<p>Enable gzip or brotli compression on your server:</p>
+<p><strong>nginx:</strong></p>
+<pre class="hljs" data-language="nginx"><code><span class="hljs-attribute">gzip</span> <span class="hljs-literal">on</span>;
+<span class="hljs-attribute">gzip_types</span> text/html text/css application/javascript application/json image/svg+xml;
+</code></pre>
+<p><strong>Apache:</strong></p>
+<pre class="hljs" data-language="apache"><code><span class="hljs-section">&lt;IfModule mod_deflate.c&gt;</span>
+    <span class="hljs-attribute">AddOutputFilterByType</span> DEFLATE text/html text/css application/javascript application/json image/svg+xml
+<span class="hljs-section">&lt;/IfModule&gt;</span>
+</code></pre>
+<h3 id="http-2" tabindex="-1"><a class="heading-anchor" href="#http-2" aria-hidden="true">#</a> HTTP/2</h3>
+<p>Enable HTTP/2 for parallel asset loading:</p>
+<ul>
+<li>Netlify, Vercel, Cloudflare: Enabled by default</li>
+<li>nginx: <code>listen 443 ssl http2;</code></li>
+<li>Apache: <code>Protocols h2 http/1.1</code></li>
+</ul>
+<h2 id="post-deployment-verification" tabindex="-1"><a class="heading-anchor" href="#post-deployment-verification" aria-hidden="true">#</a> Post-Deployment Verification</h2>
+<p>After deploying, verify:</p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> Homepage loads correctly</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> Navigation works on all pages</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> Search returns results</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> Theme toggle works</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> Code blocks display correctly</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> External links open correctly</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> 404 page shows for invalid URLs</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"> HTTPS is working (no mixed content warnings)</li>
+</ul>
+<blockquote class="alert alert-tip">
+<p><span class="alert-title"><span class="alert-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"/></svg></span>TIP</span>
+Use browser developer tools to check for console errors and network issues after deployment.</p>
+</blockquote>
+
+      </article>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <p>Built with <a href="https://github.com/KineticEnforcer/MarkStack" target="_blank" rel="noopener noreferrer">MarkStack</a></p>
+      <p class="copyright">© 2026 KineticEnforcer. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="/markstackdemo/js/app.js"></script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+    });
+  </script>
+</body>
+</html>
